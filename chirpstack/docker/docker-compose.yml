@@ -1,0 +1,78 @@
+version: "3"
+
+services:
+  chirpstack-network-server:
+    image: chirpstack-network-server:arm64
+    volumes:
+      - ./configuration/chirpstack-network-server:/etc/chirpstack-network-server
+    depends_on:
+      - postgresql
+      - mosquitto
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  chirpstack-application-server:
+    image: chirpstack-application-server:arm64
+    ports:
+      - 8080:8080
+    volumes:
+      - ./configuration/chirpstack-application-server:/etc/chirpstack-application-server
+    depends_on:
+      - chirpstack-network-server
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  chirpstack-gateway-bridge:
+    image: chirpstack-gateway-bridge:arm64
+    ipc: host
+    ports:
+      - 1700:1700/udp
+    volumes:
+      - ./configuration/chirpstack-gateway-bridge-arm64:/etc/chirpstack-gateway-bridge
+      - /tmp/chirpstack:/tmp
+    depends_on: 
+      - mosquitto
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  postgresql:
+    image: postgres:9.6-alpine
+    environment:
+      - POSTGRES_PASSWORD=root
+    volumes:
+      - ./configuration/postgresql/initdb:/docker-entrypoint-initdb.d
+      - postgresqldata:/var/lib/postgresql/data
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  redis:
+    image: redis:5-alpine
+    volumes:
+      - redisdata:/data
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - 1883:1883
+    volumes: 
+      - ./configuration/eclipse-mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+volumes:
+  postgresqldata:
+  redisdata:

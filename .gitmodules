@@ -1,0 +1,15 @@
+[submodule "chirpstack/chirpstack-docker"]
+	path = chirpstack/chirpstack-docker
+	url = https://github.com/brocaar/chirpstack-docker.git
+[submodule "chirpstack/chirpstack-network-server"]
+	path = chirpstack/chirpstack-network-server
+	url = https://github.com/brocaar/chirpstack-network-server.git
+[submodule "chirpstack/chirpstack-application-server"]
+	path = chirpstack/chirpstack-application-server
+	url = https://github.com/brocaar/chirpstack-application-server.git
+[submodule "chirpstack/chirpstack-gateway-bridge"]
+	path = chirpstack/chirpstack-gateway-bridge
+	url = https://github.com/brocaar/chirpstack-gateway-bridge.git
+[submodule "chirpstack/chirpstack-concentratord"]
+	path = chirpstack/chirpstack-concentratord
+	url = https://github.com/brocaar/chirpstack-concentratord.git

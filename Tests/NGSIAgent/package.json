@@ -1,0 +1,29 @@
+{
+    "name": "ngsiagent",
+    "version": "1.0.0",
+    "description": "ngsiagent",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "test-brk": "mocha --inspect-brk=0.0.0.0 --recursive",
+        "test": "mocha --recursive",
+        "onetest": "mocha --recursive $TEST",
+        "onetest-brk": "mocha --inspect-brk=0.0.0.0 --recursive $TEST"
+    },
+    "keywords": [
+        "FIWARE",
+        "Chirpstack"
+    ],
+    "author": "Marc Despland (Orange)",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "axios": "^0.21.1",
+        "express": "^4.17.1",
+        "express-openapi": "^6.0.0"
+    },
+    "devDependencies": {
+        "chai": "^4.3.0",
+        "chai-as-promised": "^7.1.1",
+        "mocha": "^7.1.1"
+    }
+}

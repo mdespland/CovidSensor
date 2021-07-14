@@ -35,8 +35,70 @@ sudo dphys-swapfile swapon
 
 better to reduce it after the build process
 
+## Clone this repo
+
+``` 
+git clone https://github.com/mdespland/CovidSensor.git
+cd CovidSensor
+git submodule update --remote --recursive
+``` 
+
 # Install Lora Gateway (ChirpStack)
 
+## The Gateway solution
+
+To deploy the gateway solution with docker, we need to rebuild the differents images. All the built images have been pushed on dockerhub.
+
+### Build the images
+
+```
+git clone https://github.com/brocaar/chirpstack-network-server.git
+cd chirpstack-network-server/
+docker build -t chirpstack-network-server:arm64 .
+cd ..
+git clone https://github.com/brocaar/chirpstack-application-server.git
+cd chirpstack-application-server/
+docker build -t chirpstack-application-server:arm64 .
+cd ..
+git clone https://github.com/brocaar/chirpstack-gateway-bridge.git
+cd chirpstack-gateway-bridge/
+docker build -t chirpstack-gateway-bridge:arm64 .
+```
+
+### Deploy the gateway
+
+``` 
+cd chirpstack
+cp -R chirpstack-docker/configuration docker/
+cd docker
+docker-compose up -d
+``` 
+Then you can connect to the portal
+
+Connect to the UI [http://127.0.0.1:8080](http://127.0.0.1:8080) ```admin/admin```
+Connect to the API [http://127.0.0.1:8080/api](http://127.0.0.1:8080/api)
+Configure a network server ```chirpstack-network-server:8000```
+
+## The concentratord
+
+It will be installed directly on the RPI4 host
+
+
+```
+cd chirpstack/chirpstack-concentratord
+make build-native-release
+sudo cp target/release/chirpstack-concentratord-sx1301 /usr/bin/
+```
+
+
+```
+sudo cd chirpstack/concentratord
+sudo mkdir -p /etc/chirpstack-concentratord/sx1301
+sudo cp sx1301/*.toml  /etc/chirpstack-concentratord/sx1301/
+sudo cp init.d/chirpstack-concentratord /etc/init.d/
+sudo cp default/chirpstack-concentratord /etc/default/
+sudo update-rc.d chirpstack-concentratord defaults
+```
 
 # Resources
 

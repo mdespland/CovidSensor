@@ -1,0 +1,81 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:           chirpstack-concentratord
+# Required-Start:     $syslog $remote_fs
+# Required-Stop:      $syslog $remote_fs
+# Should-Start:       cgroupfs-mount cgroup-lite
+# Should-Stop:        cgroupfs-mount cgroup-lite
+# Default-Start:      2 3 4 5
+# Default-Stop:       0 1 6
+# Short-Description:  Start chirpstack-concentratord for the Lora Gateway
+# Description:
+#  Start chirpstack-concentratord for the Lora Gateway
+### END INIT INFO
+
+NAME="chirpstack-concentratord"
+DESC="ChirpStack Concentratord"
+CONCENTRATORD_VERSION="sx1301"
+
+if [ -f "/etc/default/${NAME}" ]; then
+    echo source /etc/default/${NAME}
+fi
+
+DAEMON_BIN=/usr/bin/${NAME}-${CONCENTRATORD_VERSION}
+DAEMON_CONF_GLOBAL=/etc/${NAME}/${CONCENTRATORD_VERSION}/global.toml
+DAEMON_CONF_BAND=/etc/${NAME}/${CONCENTRATORD_VERSION}/band.toml
+DAEMON_CONF_CHANNELS=/etc/${NAME}/${CONCENTRATORD_VERSION}/channels.toml
+DAEMON_PID=/var/run/${NAME}.pid
+
+if [ ! -f "${DAEMON_CONF_GLOBAL}" ] || [ ! -f "${DAEMON_CONF_BAND}" ] || [ ! -f "${DAEMON_CONF_CHANNELS}" ]; then
+    echo "Configuration file ${DAEMON_CONF_GLOBAL} does not exist"
+    exit 1
+fi
+
+do_start() {
+    echo "Starting ${NAME}"
+	mkdir -p /tmp/chirpstack && chmod a+rwx /tmp/chirpstack
+	if [ -S /tmp/chirpstack/concentratord_event ]; then
+                rm /tmp/chirpstack/concentratord_event
+                rm /tmp/chirpstack/concentratord_command
+		echo sockets remove
+        fi
+	start-stop-daemon \
+        --start \
+        --background \
+        --make-pidfile \
+        --pidfile ${DAEMON_PID} \
+        --exec ${DAEMON_BIN} -- -c ${DAEMON_CONF_GLOBAL} -c ${DAEMON_CONF_BAND} -c ${DAEMON_CONF_CHANNELS}
+	count=0; while [ ! -S /tmp/chirpstack/concentratord_event ] && [ ${count} -lt 10 ] ; do sleep 2 ; ((count+=1)); done
+	if [ -S /tmp/chirpstack/concentratord_event ]; then
+		chmod a+w /tmp/chirpstack/concentratord_event
+		chmod a+w /tmp/chirpstack/concentratord_command
+		echo chmod done on socket
+	fi
+}
+
+do_stop() {
+    echo "Stopping ${NAME}"
+
+    start-stop-daemon \
+        --stop \
+        --oknodo \
+        --quiet \
+        --pidfile ${DAEMON_PID}
+}
+
+case "$1" in
+    "start")
+        do_start
+        ;;
+    "stop")
+        do_stop
+        ;;
+    "restart")
+        do_stop
+        do_start
+        ;;
+    *)
+        echo "Usage: $1 {start|stop|restart}"
+        exit 1
+        ;;
+esac
