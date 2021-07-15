@@ -1,0 +1,13 @@
+version: "3.3"
+services:
+  chirpstackagent:
+    image: marcdespland/chirpstack-ngsiagent:1.0.0
+    environment:
+      - ORION_API_URL=http://proxyld:8080
+    depends_on:
+      - proxyld
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"

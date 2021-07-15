@@ -13,3 +13,6 @@
 [submodule "chirpstack/chirpstack-concentratord"]
 	path = chirpstack/chirpstack-concentratord
 	url = https://github.com/brocaar/chirpstack-concentratord.git
+[submodule "orion-ld-arm64"]
+	path = orion-ld-arm64
+	url = https://github.com/mdespland/orion-ld-arm64.git

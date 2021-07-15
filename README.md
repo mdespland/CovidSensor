@@ -43,6 +43,14 @@ cd CovidSensor
 git submodule update --remote --recursive
 ``` 
 
+# Deploy the solution
+
+```
+cd lora-orion-ld
+./install.sh
+```
+
+
 # Install Lora Gateway (ChirpStack)
 
 ## The Gateway solution

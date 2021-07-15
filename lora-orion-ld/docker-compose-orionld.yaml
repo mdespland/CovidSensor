@@ -1,0 +1,77 @@
+version: "3.3"
+services:
+  mongo:
+    image: mongo:4.4
+    command: --nojournal
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  orion:
+    image: marcdespland/orion-ld:FIWARE_8.0_arm64
+    environment:
+      - ORIONLD_TROE=TRUE
+      - ORIONLD_TROE_USER=orion
+      - ORIONLD_TROE_PWD=orion
+      - ORIONLD_TROE_HOST=timescale
+      - ORIONLD_MONGO_HOST=mongo
+    depends_on:
+      - mongo
+      - timescale
+    command: -dbhost mongo -logLevel DEBUG  -forwarding
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  timescale:
+    image: marcdespland/timescaledb-postgis:latest-pg12
+    hostname: timescale
+    container_name: timescale
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orion"]
+      interval: 15s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    environment:
+      - POSTGRES_USER=orion
+      - POSTGRES_PASSWORD=orion
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  mintaka:
+    image: marcdespland/mintaka:latest
+    hostname: mintaka
+    container_name: mintaka
+    environment:
+      - DATASOURCES_DEFAULT_HOST=timescale
+      - DATASOURCES_DEFAULT_USERNAME=orion
+      - DATASOURCES_DEFAULT_PASSWORD=orion
+      - DATASOURCES_DEFAULT_DATABSE=orion
+    depends_on:
+      - orion
+      - timescale
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
+  proxyld:
+    restart: always
+    build: ./proxyld
+    image: proxyld:latest
+    container_name: proxyld
+    hostname: proxyld
+    depends_on:
+      - orion
+      - mintaka
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"
