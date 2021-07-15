@@ -87,7 +87,7 @@ function encodeEntity(notification) {
                 "@value": ISODate(notification.publishedAt)
             }
         },
-        "dateLastValurReported": {
+        "dateLastValueReported": {
             "type": "Property",
             "value": {
                 "@type": "DateTime",
@@ -139,7 +139,7 @@ function toUpdateEntity(entity) {
             "value": entity.value.value,
             "observedAt": entity.dateFirstUsed.value["@value"],
         },
-        "dateLastValurReported": entity.dateLastValurReported
+        "dateLastValueReported": entity.dateLastValurReported
     }
     //console.log(JSON.stringify(update))
     return update;
