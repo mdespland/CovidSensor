@@ -139,7 +139,7 @@ function toUpdateEntity(entity) {
             "value": entity.value.value,
             "observedAt": entity.dateFirstUsed.value["@value"],
         },
-        "dateLastValueReported": entity.dateLastValurReported
+        "dateLastValueReported": entity.dateLastValueReported
     }
     //console.log(JSON.stringify(update))
     return update;

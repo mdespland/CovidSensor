@@ -21,7 +21,7 @@ module.exports = {
     AgentListenPort: process.env.AGENT_LISTEN_PORT || 8080,
     AgentListenIP: process.env.AGENT_LISTEN_IP || "0.0.0.0",
     ShowData: true,
-    Debug: false,
+    Debug: true,
     Devices: decodeDevices(),
     MainSubscriptionId: "urn:ngsi-ld:Subscription:CovidSensor:AirQualityObserved",
     SubscriptionHost: process.env.SUBSCRIPTION_HOST || "decoderagent",

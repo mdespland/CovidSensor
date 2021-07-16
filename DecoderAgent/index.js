@@ -40,8 +40,8 @@ app.use(function (req, res, next) {
 
 
 app.all('/subscription/airqualityobserved', async function (req, res, next) {
-    if (config.Debug) console.log(req.body.toString('binary'))
-    var notifification = {}
+    if (Config.Debug) console.log(req.body.toString('binary'))
+    var notification = {}
     try {
         notification = JSON.parse(req.body)
     } catch (error) {
@@ -50,7 +50,7 @@ app.all('/subscription/airqualityobserved', async function (req, res, next) {
     if (notification === {}) {
         res.sendStatus(500)
     } else {
-        if ((notification.hasOwnProperty("subscriptionId")) && (notifification.subscriptionId === Config.MainSubscriptionId)) {
+        if ((notification.hasOwnProperty("subscriptionId")) && (notification.subscriptionId === Config.MainSubscriptionId)) {
             if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
                 for (var i = 0; i < notification.data.length; i++) {
                     if (notification.data[i].hasOwnProperty("id") && notification.data[i].hasOwnProperty("refDevice") && notification.data[i].refDevice.hasOwnProperty("object")) {
@@ -66,43 +66,52 @@ app.all('/subscription/airqualityobserved', async function (req, res, next) {
     }
 });
 
-app.all('/subscription/device/:deviceid', function (req, res, next) {
-    if (config.Debug) console.log(req.body.toString('binary'))
-    var notifification = {}
+app.all('/subscription/device/:deviceid', async function (req, res, next) {
+    if (Config.Debug) console.log(req.body.toString('binary'))
+    var notification = {}
     try {
         notification = JSON.parse(req.body)
     } catch (error) {
         console.log("can't parse body " + req.body)
     }
     if (notification === {}) {
+        console.log("notification empty")
         res.sendStatus(500)
     } else {
         if (notification.hasOwnProperty("subscriptionId")) {
             if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
                 for (var i = 0; i < notification.data.length; i++) {
-                    if (notification.data[i].hasOwnProperty("id") && notification.data[i].hasOwnProperty("value") && notification.data[i].value.hasOwnProperty("value") && notification.data[i].hasOwnProperty("dateLastValueReported") && notification.data[i].dateLastValueReported.hasOwnProperty("value")) {
-                        if (req.params.deviceid===notification.data[i].id) {
+                    if (Config.Debug) {
+                        console.log("notification.data[i].hasOwnProperty(id) :" +notification.data[i].hasOwnProperty("id"))
+                        console.log("notification.data[i].hasOwnProperty(\"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported\") : "+notification.data[i].hasOwnProperty("https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"))
+                        console.log("notification.data[i].hasOwnProperty(\"value\") && notification.data[i].value.hasOwnProperty(\"value\") : "+(notification.data[i].hasOwnProperty("value") && notification.data[i].value.hasOwnProperty("value")))
+                        console.log("notification.data[i][\"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported\"].hasOwnProperty(\"value\") : "+notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].hasOwnProperty("value"))
+                        console.log("notification.data[i][\"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported\"].value.hasOwnProperty(\"@value\") : "+notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].value.hasOwnProperty("@value"))
+                    }
+                    if (notification.data[i].hasOwnProperty("id")
+                        && notification.data[i].hasOwnProperty("value") && notification.data[i].value.hasOwnProperty("value")
+                        && notification.data[i].hasOwnProperty("https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported")
+                        && notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].hasOwnProperty("value")
+                        && notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].value.hasOwnProperty("@value")) {
+                        if (req.params.deviceid === notification.data[i].id) {
                             try {
-                                await Decoder.pushDeviceData(notification.data[i].id, notification.data[i].value.value, notification.data[i].dateLastValueReported.value)
+                                if (Config.Debug) console.log("pushDeviceData("+notification.data[i].id+", "+notification.data[i].value.value+", "+notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].value["@value"]+")")
+                                await Decoder.pushDeviceData(notification.data[i].id, notification.data[i].value.value, notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].value["@value"])
                             } catch (error) { }
+                        } else {
+                            if (Config.Debug) console.log("Wrong device notification "+req.params.deviceid+" : "+ notification.data[i].id)
                         }
+                    } else {
+                        if (Config.Debug) console.log("Wrong format") 
                     }
 
                 }
-                
+
             }
         }
-                res.sendStatus(204)
-            }
-    response = {
-        deviceid: req.params.deviceid,
-        method: req.method,
-        hostname: req.hostname,
-        url: req.url,
-        headers: req.headers,
-        body: req.body.toString('binary')
+        res.sendStatus(204)
     }
-    res.json({ ok: true });
+
 });
 
 app.all('*', function (req, res, next) {
@@ -117,7 +126,7 @@ app.all('*', function (req, res, next) {
     console.log(JSON.stringify(response, null, 4))
 });
 
-app.listen(Config.AgentListenPort, Config.AgentListenIP, function (err) {
+app.listen(Config.AgentListenPort, Config.AgentListenIP, async function (err) {
     if (err) console.log("Error in server setup")
     console.log("Server listening on Port", Config.AgentListenPort);
     await Decoder.init();
