@@ -71,7 +71,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
         if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
     });
     it('Create the entities AirQualityObserved value and recieve the notification', async () => {
-        var entityid = "uurn:ngsi-ld:AirQualityObserved:Madrid-AmbientObserved:" + Tools.makeid(16);;
+        var entityid = "urn:ngsi-ld:AirQualityObserved:Madrid-AmbientObserved:" + Tools.makeid(16);;
         entities.push(entityid);
         var entity = {
             "id": entityid,
@@ -180,7 +180,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
             "notification": {
                 "attributes": ["value"],
                 "endpoint": {
-                    "uri": "http://decoderagent:" + port + "/subscription/test/notification",
+                    "uri": "http://decoderagent:" + port + "/subscription/device/urn:ngsi-ld:Device:chirpstack:00000",
                     "accept": "application/json"
                 }
             },
@@ -268,7 +268,9 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
         var response = await expect(Subscribe.call(request, 201, 8000, 500)).to.be.fulfilled;
         expect(response.hasOwnProperty("body")).to.be.true;
         expect(response.method).to.be.eql("POST");
-        expect(response.url).to.be.eql("/subscription/test/notification");
+        expect(response.url).to.be.eql("/subscription/device/urn:ngsi-ld:Device:chirpstack:00000");
+        expect(response.hasOwnProperty("deviceid")).to.be.true;
+        expect(response.deviceid).to.be.eql("urn:ngsi-ld:Device:chirpstack:00000");
         var notification = JSON.parse(response.body)
         if (Config.ShowData) console.log(JSON.stringify(notification, null, 4));
         expect(Array.isArray(notification.data)).to.be.true
@@ -307,7 +309,9 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
         var response = await expect(Subscribe.call(request, 204, 8000, 500)).to.be.fulfilled;
         expect(response.hasOwnProperty("body")).to.be.true;
         expect(response.method).to.be.eql("POST");
-        expect(response.url).to.be.eql("/subscription/test/notification");
+        expect(response.url).to.be.eql("/subscription/device/urn:ngsi-ld:Device:chirpstack:00000");
+        expect(response.hasOwnProperty("deviceid")).to.be.true;
+        expect(response.deviceid).to.be.eql("urn:ngsi-ld:Device:chirpstack:00000");
         var notification = JSON.parse(response.body)
         if (Config.ShowData) console.log(JSON.stringify(notification, null, 4));
         expect(Array.isArray(notification.data)).to.be.true

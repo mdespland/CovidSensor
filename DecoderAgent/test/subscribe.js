@@ -24,6 +24,18 @@ app.use(function (req, res, next) {
     });
 });
 
+app.all('/subscription/device/:deviceid', function (req, res, next) {
+    response = {
+        deviceid: req.params.deviceid,
+        method: req.method,
+        hostname: req.hostname,
+        url: req.url,
+        headers: req.headers,
+        body: req.body.toString('binary')
+    }
+    res.json({ ok: true });
+});
+
 app.all('*', function (req, res, next) {
     response = {
         method: req.method,
@@ -32,11 +44,11 @@ app.all('*', function (req, res, next) {
         headers: req.headers,
         body: req.body.toString('binary')
     }
-    res.json({ok: true});
+    res.json({ ok: true });
 });
 
 
-async function call(request, expected = 200, timeout=500, step=100) {
+async function call(request, expected = 200, timeout = 500, step = 100) {
     //if (response!==undefined) delete response;
     response = undefined;
     var result;
@@ -46,13 +58,13 @@ async function call(request, expected = 200, timeout=500, step=100) {
         return Promise.reject(error)
     }
     if (result.status === expected) {
-        var delay=0;
-        while (delay<timeout && response===undefined) {
+        var delay = 0;
+        while (delay < timeout && response === undefined) {
             await new Promise(r => setTimeout(r, step));
-            delay+=step;
+            delay += step;
         }
-        if (response===undefined) {
-            return Promise.reject("No response recieved after "+timeout+" ms")
+        if (response === undefined) {
+            return Promise.reject("No response recieved after " + timeout + " ms")
         } else {
             return response;
         }
@@ -61,8 +73,27 @@ async function call(request, expected = 200, timeout=500, step=100) {
     }
 }
 
+function clearResponse() {
+    response = undefined;
+}
+
+async function lastResponse(timeout = 500, step = 100) {
+    var delay = 0;
+    while (delay < timeout && response === undefined) {
+        await new Promise(r => setTimeout(r, step));
+        delay += step;
+    }
+    if (response === undefined) {
+        return Promise.reject("No response recieved after " + timeout + " ms")
+    } else {
+        return response;
+    }
+}
+
 module.exports = {
     call,
+    clearResponse,
+    lastResponse,
     listen(port) {
         server = app.listen(port);
     },

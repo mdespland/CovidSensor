@@ -76,6 +76,29 @@ describe('Test Temporal Entities worklow to work with ORION-LD + MINTAKA', funct
             "observedAt": "2016-03-15T11:00:00.000Z"
         })        
     });
+    it('GET /entities?type=AirQualityObserved => 200 OK', async () => {
+      var response = await expect(Tools.sendRequest("GET", "/entities?type=AirQualityObserved", "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
+      expect(response.status).to.be.eql(200);
+      expect(response.hasOwnProperty("data")).to.be.true
+      if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
+      expect(Array.isArray(response.data)).to.be.true       
+  });
+  it('GET /entities?type=AirQualityObserved&q=refDevice==%22urn%3Angsi-ld%3ADevice%3Achirpstack%3A000000%22 => 200 OK', async () => {
+    var response = await expect(Tools.sendRequest("GET", "/entities?type=AirQualityObserved&q=refDevice=="+encodeURI("\"urn:ngsi-ld:Device:chirpstack:000000\""), "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
+    expect(response.status).to.be.eql(200);
+    expect(response.hasOwnProperty("data")).to.be.true
+    if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
+    expect(Array.isArray(response.data)).to.be.true       
+});
+/*
+it('GET /entities?type=AirQualityObserved&q=refDevice~=%22^urn%3Angsi-ld%3ADevice%3Achirpstack%3A.*$%22 => 200 OK', async () => {
+  console.log("Pattern : "+encodeURI("\"urn:ngsi-ld:Device:chirpstack:.*\""))
+  var response = await expect(Tools.sendRequest("GET", "/entities?type=AirQualityObserved&q=source~="+encodeURI("^chirp.*"), "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
+  expect(response.status).to.be.eql(200);
+  expect(response.hasOwnProperty("data")).to.be.true
+  if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
+  expect(Array.isArray(response.data)).to.be.true       
+});*/
     it('Update the entities', async () => {
         var attributes = {
             "dateObserved": {
