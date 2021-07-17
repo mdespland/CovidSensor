@@ -50,6 +50,7 @@ app.all('/subscription/airqualityobserved', async function (req, res, next) {
     if (notification === {}) {
         res.sendStatus(500)
     } else {
+        console.log("Notification /subscription/airqualityobserved => "+JSON.stringify(notification))
         if ((notification.hasOwnProperty("subscriptionId")) && (notification.subscriptionId === Config.MainSubscriptionId)) {
             if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
                 for (var i = 0; i < notification.data.length; i++) {
@@ -78,6 +79,7 @@ app.all('/subscription/device/:deviceid', async function (req, res, next) {
         console.log("notification empty")
         res.sendStatus(500)
     } else {
+        console.log("Notification /subscription/device/"+req.params.deviceid+" => "+JSON.stringify(notification))
         if (notification.hasOwnProperty("subscriptionId")) {
             if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
                 for (var i = 0; i < notification.data.length; i++) {

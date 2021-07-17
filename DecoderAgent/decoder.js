@@ -21,7 +21,13 @@ module.exports = {
 const Link = "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
 
 function decodeDeviceData(data) {
-    return data;
+    const buff = Buffer.from(data, 'base64');
+    if (buff.length===4) {
+        var ppm = buff.readUInt8(0) * 256 + buff.readUInt8(1);
+        var volts = buff.readUInt8(2) * 256 + buff.readUInt8(3);
+        return ppm
+    }
+    return 0;
 }
 
 async function createAirQualityObserved(id, refDevice) {
@@ -70,20 +76,21 @@ async function searchAirQualityObserved(refDevice) {
         if ((response.status === 200) && (Array.isArray(response.data))) {
             return response.data
         } else {
-            if (Config.Debug) console.log("searchAirQualityObserved : response not an array "+response.status+" "+JSON.stringify(response.data, null, 4))
+            if (Config.Debug) console.log("searchAirQualityObserved : response not an array " + response.status + " " + JSON.stringify(response.data, null, 4))
             return []
         }
     } catch (error) {
-        if (Config.Debug) console.log("searchAirQualityObserved : "+error)
+        if (Config.Debug) console.log("searchAirQualityObserved : " + error)
         return []
     }
 }
 
 async function pushDeviceData(refDevice, data, now) {
-    var list=await searchAirQualityObserved(refDevice)
-    var co2=decodeDeviceData(data)
+    var list = await searchAirQualityObserved(refDevice)
+    var co2 = decodeDeviceData(data)
     if (Config.Debug) console.log(JSON.stringify(list, null, 4))
-    for (var i=0; i< list.length; i++) {
+    for (var i = 0; i < list.length; i++) {
+        console.log(now+"\t Updating "+list[i].id+" with value "+co2)
         await updateAirQualityObserved(list[i].id, co2, now)
     }
 }

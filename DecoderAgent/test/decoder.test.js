@@ -20,7 +20,7 @@ function test(param = {
 }
 var ConfigBackup = {};
 
-describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', function () {
+describe('Test Decoder features', function () {
     this.timeout(10000);
     before(async () => {
         ConfigBackup.AgentListenPort = Config.AgentListenPort;
@@ -171,7 +171,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
             },
             "value": {
                 "type": "Property",
-                "value": "My Data"
+                "value": "F3oAug=="
             },
             "refDeviceModel": {
                 "type": "Relationship",
@@ -312,7 +312,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
         })        
     });
     it('Check pushDeviceData', async () => {
-        await expect(Decoder.pushDeviceData("urn:ngsi-ld:Device:chirpstack:test:00000",600,"2016-03-15T11:00:00.000Z")).to.be.fulfilled;
+        await expect(Decoder.pushDeviceData("urn:ngsi-ld:Device:chirpstack:test:00000","F3oAug==","2016-03-15T11:00:00.000Z")).to.be.fulfilled;
     })
     it('GET urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1 => 200 OK', async () => {
         var response = await expect(Decoder.sendRequest("GET", "/entities/urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1", "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
@@ -322,7 +322,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
         expect(response.data.hasOwnProperty("co2"), "co2").to.be.true
         expect(response.data.co2).to.be.eql({
             "type": "Property",
-            "value": 600,
+            "value": 6010,
             "unitCode": "PPM",
             "observedAt": "2016-03-15T11:00:00.000Z"
         })        
@@ -335,7 +335,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
         expect(response.data.hasOwnProperty("co2"), "co2").to.be.true
         expect(response.data.co2).to.be.eql({
             "type": "Property",
-            "value": 600,
+            "value": 6010,
             "unitCode": "PPM",
             "observedAt": "2016-03-15T11:00:00.000Z"
         })        

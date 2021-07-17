@@ -230,7 +230,7 @@ describe('Test Subscriptions Entities worklow to work with ORION-LD + MINTAKA', 
             },
             "value": {
                 "type": "Property",
-                "value": "My Data"
+                "value": "F3oAug=="
             },
             "refDeviceModel": {
                 "type": "Relationship",
