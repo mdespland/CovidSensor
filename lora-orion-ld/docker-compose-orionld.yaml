@@ -67,6 +67,8 @@ services:
     image: proxyld:latest
     container_name: proxyld
     hostname: proxyld
+    ports:
+      - 8082:8080
     depends_on:
       - orion
       - mintaka

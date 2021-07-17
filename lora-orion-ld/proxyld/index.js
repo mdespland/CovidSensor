@@ -24,7 +24,9 @@
 var Config = require('./config');
 const axios = require('axios');
 const express = require('express');
+var cors = require('cors')
 const app = express();
+app.use(cors())
 
 app.use(function (req, res, next) {
   var data = [];
