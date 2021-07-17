@@ -59,8 +59,10 @@ async function receiveDeviceNotification(notification) {
     var entity = encodeEntity(notification);
     try {
         if (! await OrionLD.entityExists(entity.id)) {
+            console.log("Create entity "+ entity.id+" with value "+entity.value.value)
             await OrionLD.createEntity(entity)
         } else {
+            console.log("Update entity "+ entity.id+" with value "+entity.value.value)
             await OrionLD.updateEntity(entity.id, toUpdateEntity(entity))
         }
     } catch (error) {

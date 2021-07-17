@@ -40,7 +40,7 @@ app.use(function (req, res, next) {
 
 
 app.all('/chirpstack', async function (req, res, next) {
-  console.log(req.body.toString('binary'))
+  //console.log(req.body.toString('binary'))
   var notif = {}
   try {
     notif = JSON.parse(req.body)
@@ -50,8 +50,13 @@ app.all('/chirpstack', async function (req, res, next) {
   if (notif === {}) {
     res.sendStatus(500)
   } else {
+    console.log("Notification /chirpstack => "+JSON.stringify(notif))
     try {
-      await Chirpstack.receiveDeviceNotification(notif);
+      if (notif.hasOwnProperty("data") && notif.hasOwnProperty("devEUI") && notif.hasOwnProperty("publishedAt") && notif.hasOwnProperty("devAddr")) {
+        await Chirpstack.receiveDeviceNotification(notif);
+      } else {
+        console.log("Not a data event")
+      }
       res.sendStatus(204)
     } catch (error) {
       console.log(error)
