@@ -1,0 +1,30 @@
+{
+  "name": "rpico2agent",
+  "version": "1.0.0",
+  "description": "Agent to collect data from RPI CO2 Sensor",
+  "main": "index.js",
+  "scripts": {
+    "test-brk": "mocha --inspect-brk=0.0.0.0 --recursive",
+    "test": "mocha --recursive",
+    "onetest": "mocha --recursive $TEST",
+    "debug": "node --inspect=0.0.0.0 index.js",
+    "debug-brk": "node --inspect-brk=0.0.0.0 index.js",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "NGSI-LD",
+    "CO2",
+    "WiringPI"
+  ],
+  "author": "Marc Despland",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^7.1.1"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "node-wiring-pi": "^0.0.5"
+  }
+}
