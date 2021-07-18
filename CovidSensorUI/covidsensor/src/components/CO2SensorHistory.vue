@@ -28,10 +28,14 @@ export default {
   },
   data() {
     return {
+      count: 0,
       sensor: null,
       errors: [],
       loaded: false,
-      chartdata: null,
+      chartdata: {
+        labels: [],
+        datasets: [],
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -45,7 +49,7 @@ export default {
   methods: {
     loadData() {
       var date = new Date(Date.now() - 12 * 60 * 60 * 1000);
-      console.log("Origin :"+date.toISOString())
+      console.log("Origin :" + date.toISOString());
       ORIONLD.get(
         "temporal/entities/" +
           this.sensorid +
@@ -61,10 +65,13 @@ export default {
             Array.isArray(this.sensor.co2.values)
           ) {
             //if (this.sensor.hasOwnProperty('co2') && this.sensor.co2.hasOwnProperty('values') && Array.isArray(this.sensor.co2.values)) {
-            this.chartdata = {
+
+            /*this.chartdata = {
               labels: [],
               datasets: [],
-            };
+            };*/
+            this.chartdata.labels.length=0;
+            this.chartdata.datasets.length=0;
             var data = {
               label: this.sensorid,
               backgroundColor: "#f87979",
@@ -98,10 +105,10 @@ export default {
   },
   created: function () {
     this.loadData();
-    this.timer = setInterval(this.loadData, 10*60*1000);
+    this.timer = setInterval(this.loadData, 10* 60 * 1000);
   },
   beforeDestroy: function () {
     this.cancelAutoUpdate();
-  }
+  },
 };
 </script>
