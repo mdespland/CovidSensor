@@ -25,9 +25,9 @@ function decodeDeviceData(data) {
     if (buff.length===4) {
         var ppm = buff.readUInt8(0) * 256 + buff.readUInt8(1);
         var volts = buff.readUInt8(2) * 256 + buff.readUInt8(3);
-        return ppm
+        return [ppm, volts/100]
     }
-    return 0;
+    return [0, 0];
 }
 
 async function createAirQualityObserved(id, refDevice) {
@@ -43,6 +43,11 @@ async function createAirQualityObserved(id, refDevice) {
             "type": "Property",
             "value": 400,
             "unitCode": "PPM"
+        },
+        "voltage": {
+            "type": "Property",
+            "value": 0,
+            "unitCode": "V"
         },
         "source": {
             "type": "Property",
@@ -87,11 +92,11 @@ async function searchAirQualityObserved(refDevice) {
 
 async function pushDeviceData(refDevice, data, now) {
     var list = await searchAirQualityObserved(refDevice)
-    var co2 = decodeDeviceData(data)
+    var values = decodeDeviceData(data)
     if (Config.Debug) console.log(JSON.stringify(list, null, 4))
     for (var i = 0; i < list.length; i++) {
-        console.log(now+"\t Updating "+list[i].id+" with value "+co2)
-        await updateAirQualityObserved(list[i].id, co2, now)
+        console.log(now+"\t Updating "+list[i].id+" with value "+values[0]+" ppm => "+values[1]+" V")
+        await updateAirQualityObserved(list[i].id, values[0], values[1], now)
     }
 }
 
@@ -105,7 +110,7 @@ async function checkAirQualityObserved(id, refDevice) {
     }
 }
 
-async function updateAirQualityObserved(id, value, now) {
+async function updateAirQualityObserved(id, co2, voltage, now) {
     var attributes = {
         "dateObserved": {
             "type": "Property",
@@ -113,8 +118,14 @@ async function updateAirQualityObserved(id, value, now) {
         },
         "co2": {
             "type": "Property",
-            "value": value,
+            "value": co2,
             "unitCode": "PPM",
+            "observedAt": now
+        },
+        "voltage": {
+            "type": "Property",
+            "value": voltage,
+            "unitCode": "V",
             "observedAt": now
         },
         "@context": [

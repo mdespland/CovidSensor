@@ -57,6 +57,20 @@ cd lora-orion-ld
 
 To deploy the gateway solution with docker, we need to rebuild the differents images. All the built images have been pushed on dockerhub.
 
+## Connect the board
+
+| Description | ic880a-spi | RPI4       |
+|-------------|:----------:|:----------:|
+| VDD  +5v    | 21 | 2 |
+| GND         | 22 | 14 |
+| GND         | 12 | 20 |
+| Reset       | 13 | 22 |
+| CLK         | 14 | 23 |
+| MISO        | 15 | 21 |
+| MOSI        | 16 | 19 |
+| NSS         | 17 | 24 |
+
+
 ### Build the images
 
 ```
