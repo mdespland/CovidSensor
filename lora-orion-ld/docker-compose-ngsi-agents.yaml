@@ -22,3 +22,12 @@ services:
       options:
         max-size: "15m"
         max-file: "2"
+  covidsensorui:
+    image: marcdespland/covidsensorui:latest
+    ports:
+      - 80:80
+    restart: always
+    logging:
+      options:
+        max-size: "15m"
+        max-file: "2"

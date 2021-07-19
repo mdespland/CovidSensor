@@ -9,9 +9,12 @@ COPY ./package.json /app/
 RUN npm install
 COPY ./public/ /app/public/
 COPY ./babel.config.js /app/
+COPY ./.env.development /app/
+COPY ./.env.production /app/
 COPY ./src/ /app/src/
-WORKDIR /app/src
-RUN vue build
+#WORKDIR /app/src
+#RUN vue build
+RUN npm run build
 
 FROM nginx as runner
-COPY --from=builder /app/src/dist/ /usr/share/nginx/html/
+COPY --from=builder /app/ dist/ /usr/share/nginx/html/

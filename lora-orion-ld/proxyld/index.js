@@ -44,21 +44,21 @@ app.all('*', async function (req, res, next) {
   if (req.url.startsWith(Config.BasePath)) {
     var base = req.url.substring(Config.BasePath.length);
     req.url = base;
-    var host=Config.OrionAPIURL;
+    var host = Config.OrionAPIURL;
 
     if (base.startsWith("/temporal/entities")) {
-      if (req.method==="GET") {
-        host=Config.MintakaAPIURL;
+      if (req.method === "GET") {
+        host = Config.MintakaAPIURL;
       }
     }
-    
+
     var request = {
       method: req.method,
       url: host + req.url,
       headers: req.headers,
       data: req.body
     };
-    console.log("Request : "+ req.url+ " - "+ request.url)
+    console.log("Request : " + req.url + " - " + request.url)
     delete request.headers.host;
     delete request.headers["content-length"];
     try {
@@ -77,9 +77,34 @@ app.all('*', async function (req, res, next) {
       }
     }
   } else {
-    res.sendStatus(404)
+    var host = Config.APPAPIURL;
+    var request = {
+      method: req.method,
+      url: host + req.url,
+      headers: req.headers,
+      data: req.body
+    };
+    console.log("Request : " + req.url + " - " + request.url)
+    delete request.headers.host;
+    delete request.headers["content-length"];
+    try {
+      var response;
+      response = await axios.request(request);
+      res.statusCode = response.status
+      res.headers = response.headers;
+      res.send(response.data);
+    } catch (error) {
+      if ((error.hasOwnProperty("response")) && (error.response !== undefined)) {
+        res.statusCode = error.response.status
+        res.headers = error.response.headers;
+        res.send(error.response.data);
+      } else {
+        console.log(error);
+        res.sendStatus(404)
+      }
+    }
   }
 });
 
 
-app.listen(Config.ProxyListenPort,Config.ProxyListenIP);
+app.listen(Config.ProxyListenPort, Config.ProxyListenIP);

@@ -14,8 +14,10 @@
 <script>
 import axios from "axios";
 
+const ORION_API_URL= process.env.VUE_APP_ORION_API_URL
+
 const ORIONLD = axios.create({
-  baseURL: `http://172.17.0.1:8082/ngsi-ld/v1/`,
+  baseURL: ORION_API_URL +`/ngsi-ld/v1/`,
   headers: {
     Link: '<https://smartdatamodels.org/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"',
   },
