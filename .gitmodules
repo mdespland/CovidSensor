@@ -16,3 +16,6 @@
 [submodule "orion-ld-arm64"]
 	path = orion-ld-arm64
 	url = https://github.com/mdespland/orion-ld-arm64.git
+[submodule "Arduino/ESP32_LoRaWAN"]
+	path = Arduino/ESP32_LoRaWAN
+	url = https://github.com/HelTecAutomation/ESP32_LoRaWAN.git
