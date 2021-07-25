@@ -53,4 +53,9 @@ module cache_co2sensor(border=2, sensor_diam=20, sensor_height=30) {
     support_co2sensor();
 }
 
+
+module cache_co2sensor_simple(border=1, sensor_diam=20, sensor_height=30) {
+    translate([-5,-1,-border]) cube([38.5+3.5+2+5, 28.5+3.5+2, border]);
+    support_co2sensor();
+}
 cache_co2sensor();
