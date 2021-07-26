@@ -15,7 +15,8 @@ export default {
     options: {
       type: Object,
       default: null
-    }
+    },
+    requested: Boolean
   },
   mounted () {
     this.renderChart(this.chartData, this.options)
@@ -24,8 +25,15 @@ export default {
     chartData: function() {
       //this._chart.Destroy();
       //this.renderChart(this.data, this.options);
+      console.log("Redraw charts on chartsData")
       this.renderChart(this.chartData, this.options)
     //this.setChartData(this.chartData)
+    },
+    requested: function() {
+      if (!this.requested) {
+        console.log("Redraw charts on Requested")
+        this.renderChart(this.chartData, this.options)
+      }
     }
   }
 }

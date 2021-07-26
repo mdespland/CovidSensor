@@ -83,13 +83,6 @@ app.all('/subscription/device/:deviceid', async function (req, res, next) {
         if (notification.hasOwnProperty("subscriptionId")) {
             if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
                 for (var i = 0; i < notification.data.length; i++) {
-                    if (Config.Debug) {
-                        console.log("notification.data[i].hasOwnProperty(id) :" +notification.data[i].hasOwnProperty("id"))
-                        console.log("notification.data[i].hasOwnProperty(\"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported\") : "+notification.data[i].hasOwnProperty("https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"))
-                        console.log("notification.data[i].hasOwnProperty(\"value\") && notification.data[i].value.hasOwnProperty(\"value\") : "+(notification.data[i].hasOwnProperty("value") && notification.data[i].value.hasOwnProperty("value")))
-                        console.log("notification.data[i][\"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported\"].hasOwnProperty(\"value\") : "+notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].hasOwnProperty("value"))
-                        console.log("notification.data[i][\"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported\"].value.hasOwnProperty(\"@value\") : "+notification.data[i]["https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported"].value.hasOwnProperty("@value"))
-                    }
                     if (notification.data[i].hasOwnProperty("id")
                         && notification.data[i].hasOwnProperty("value") && notification.data[i].value.hasOwnProperty("value")
                         && notification.data[i].hasOwnProperty("https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/dateLastValueReported")
@@ -106,6 +99,22 @@ app.all('/subscription/device/:deviceid', async function (req, res, next) {
                     } else {
                         if (Config.Debug) console.log("Wrong format") 
                     }
+                    if (notification.data[i].hasOwnProperty("id")
+                    && notification.data[i].hasOwnProperty("value") && notification.data[i].value.hasOwnProperty("value")
+                    && notification.data[i].hasOwnProperty("dateLastValueReported")
+                    && notification.data[i]["dateLastValueReported"].hasOwnProperty("value")
+                    && notification.data[i]["dateLastValueReported"].value.hasOwnProperty("@value")) {
+                    if (req.params.deviceid === notification.data[i].id) {
+                        try {
+                            if (Config.Debug) console.log("pushDeviceData("+notification.data[i].id+", "+notification.data[i].value.value+", "+notification.data[i]["dateLastValueReported"].value["@value"]+")")
+                            await Decoder.pushDeviceData(notification.data[i].id, notification.data[i].value.value, notification.data[i]["dateLastValueReported"].value["@value"])
+                        } catch (error) { }
+                    } else {
+                        if (Config.Debug) console.log("Wrong device notification "+req.params.deviceid+" : "+ notification.data[i].id)
+                    }
+                } else {
+                    if (Config.Debug) console.log("Wrong format") 
+                }
 
                 }
 

@@ -8,9 +8,11 @@ function decodeDevices() {
         try {
             list = JSON.parse(process.env.DEVICE_LIST)
         } catch (error) {
-
+            console.log("Can't parse List : "+ error)
+            console.log(process.env.DEVICE_LIST)
         }
     }
+    console.log(JSON.stringify(list,null,4))
     return list;
 }
 

@@ -109,9 +109,19 @@ describe('Test Decoder features', function () {
         expect(notification.hasOwnProperty("id")).to.be.true;
         expect(notification.hasOwnProperty("notifiedAt")).to.be.true;
     });
-    it('Update the AirQualityObserved', async () => {
+    it('Check the AirQualityObserved has no co2 attribute', async () => {
+        var entity = await expect(Decoder.getAirQualityObserved("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3")).to.be.fulfilled
+        expect(entity.hasOwnProperty("co2"),"co2").to.be.false;
+        expect(entity.hasOwnProperty("voltage"),"voltage").to.be.false;
+        expect(entity.hasOwnProperty("volatileOrganicCompoundsTotal"),"volatileOrganicCompoundsTotal").to.be.false;
+        expect(entity.hasOwnProperty("temperature"),"temperature").to.be.false;
+        expect(entity.hasOwnProperty("relativeHumidity"),"relativeHumidity").to.be.false;
+        expect(entity.hasOwnProperty("pressure"),"pressure").to.be.false;
+        expect(entity.hasOwnProperty("elevation"),"elevation").to.be.false;
+    })
+    it('Update the AirQualityObserved old paylaod F3oAug==', async () => {
         Subscribe.clearResponse()
-        await expect(Decoder.updateAirQualityObserved("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3", 600, (new Date()).toISOString())).to.be.fulfilled;
+        await expect(Decoder.updateAirQualityObserved("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3", "F3oAug==", (new Date()).toISOString())).to.be.fulfilled;
         var response = await (expect(Subscribe.lastResponse())).to.be.fulfilled
         expect(response.hasOwnProperty("body")).to.be.true;
         expect(response.method).to.be.eql("POST");
@@ -124,8 +134,45 @@ describe('Test Decoder features', function () {
         expect(notification.hasOwnProperty("id")).to.be.true;
         expect(notification.hasOwnProperty("notifiedAt")).to.be.true;
     });
-
-
+    it('Check the AirQualityObserved has co2 attribute', async () => {
+        var entity = await expect(Decoder.getAirQualityObserved("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3")).to.be.fulfilled
+        expect(entity.hasOwnProperty("co2"),"co2").to.be.true;
+        expect(entity.hasOwnProperty("voltage"),"voltage").to.be.true;
+        expect(entity.hasOwnProperty("volatileOrganicCompoundsTotal"),"volatileOrganicCompoundsTotal").to.be.false;
+        expect(entity.hasOwnProperty("temperature"),"temperature").to.be.false;
+        expect(entity.hasOwnProperty("relativeHumidity"),"relativeHumidity").to.be.false;
+        expect(entity.hasOwnProperty("pressure"),"pressure").to.be.false;
+        expect(entity.hasOwnProperty("elevation"),"elevation").to.be.false;
+        expect(entity.co2.value).to.be.eql(6010)
+        expect(entity.voltage.value).to.be.eql(186)
+    })
+    it('Update the AirQualityObserved old paylaod G3UAtg==', async () => {
+        Subscribe.clearResponse()
+        await expect(Decoder.updateAirQualityObserved("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3", "G3UAtg==", (new Date()).toISOString())).to.be.fulfilled;
+        var response = await (expect(Subscribe.lastResponse())).to.be.fulfilled
+        expect(response.hasOwnProperty("body")).to.be.true;
+        expect(response.method).to.be.eql("POST");
+        expect(response.url).to.be.eql("/subscription/airqualityobserved");
+        var notification = JSON.parse(response.body)
+        if (Config.ShowData) console.log(JSON.stringify(notification, null, 4));
+        expect(Array.isArray(notification.data)).to.be.true
+        expect(notification.data[0].hasOwnProperty("id")).to.be.true;
+        expect(notification.data[0].id).to.be.eql("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3");
+        expect(notification.hasOwnProperty("id")).to.be.true;
+        expect(notification.hasOwnProperty("notifiedAt")).to.be.true;
+    });
+    it('Check the AirQualityObserved has co2 attribute', async () => {
+        var entity = await expect(Decoder.getAirQualityObserved("urn:ngsi-ld:AirQualityObserved:test:Co2:sensor3")).to.be.fulfilled
+        expect(entity.hasOwnProperty("co2"),"co2").to.be.true;
+        expect(entity.hasOwnProperty("voltage"),"voltage").to.be.true;
+        expect(entity.hasOwnProperty("volatileOrganicCompoundsTotal"),"volatileOrganicCompoundsTotal").to.be.false;
+        expect(entity.hasOwnProperty("temperature"),"temperature").to.be.false;
+        expect(entity.hasOwnProperty("relativeHumidity"),"relativeHumidity").to.be.false;
+        expect(entity.hasOwnProperty("pressure"),"pressure").to.be.false;
+        expect(entity.hasOwnProperty("elevation"),"elevation").to.be.false;
+        expect(entity.co2.value).to.be.eql(7029)
+        expect(entity.voltage.value).to.be.eql(182)
+    })
     it('create Device subscription', async () => {
         var response = await expect(Decoder.createDeviceSubscription("urn:ngsi-ld:Device:chirpstack:test:00002")).to.be.fulfilled;
         expect(response).to.be.eql(true);
@@ -292,24 +339,14 @@ describe('Test Decoder features', function () {
         expect(response.status).to.be.eql(200);
         expect(response.hasOwnProperty("data")).to.be.true
         if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
-        expect(response.data.hasOwnProperty("co2"), "co2").to.be.true
-        expect(response.data.co2).to.be.eql({
-            "type": "Property",
-            "value": 400,
-            "unitCode": "PPM"
-        })        
+        expect(response.data.hasOwnProperty("co2"), "co2").to.be.false       
     });
     it('GET urn:ngsi-ld:AirQualityObserved:test:Co2:sensor4 => 200 OK', async () => {
         var response = await expect(Decoder.sendRequest("GET", "/entities/urn:ngsi-ld:AirQualityObserved:test:Co2:sensor4", "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
         expect(response.status).to.be.eql(200);
         expect(response.hasOwnProperty("data")).to.be.true
         if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
-        expect(response.data.hasOwnProperty("co2"), "co2").to.be.true
-        expect(response.data.co2).to.be.eql({
-            "type": "Property",
-            "value": 400,
-            "unitCode": "PPM"
-        })        
+        expect(response.data.hasOwnProperty("co2"), "co2").to.be.false      
     });
     it('Check pushDeviceData', async () => {
         await expect(Decoder.pushDeviceData("urn:ngsi-ld:Device:chirpstack:test:00000","F3oAug==","2016-03-15T11:00:00.000Z")).to.be.fulfilled;
@@ -323,7 +360,7 @@ describe('Test Decoder features', function () {
         expect(response.data.co2).to.be.eql({
             "type": "Property",
             "value": 6010,
-            "unitCode": "PPM",
+            "unitCode": "59",
             "observedAt": "2016-03-15T11:00:00.000Z"
         })        
     });
@@ -336,8 +373,76 @@ describe('Test Decoder features', function () {
         expect(response.data.co2).to.be.eql({
             "type": "Property",
             "value": 6010,
-            "unitCode": "PPM",
+            "unitCode": "59",
             "observedAt": "2016-03-15T11:00:00.000Z"
         })        
+    });
+    it('Check pushDeviceData KQG4ABkEOA==', async () => {
+        await expect(Decoder.pushDeviceData("urn:ngsi-ld:Device:chirpstack:test:00000","KQG4ABkEOA==","2016-03-15T11:10:00.000Z")).to.be.fulfilled;
+    })
+    it('GET urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1 => 200 OK', async () => {
+        var response = await expect(Decoder.sendRequest("GET", "/entities/urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1", "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
+        expect(response.status).to.be.eql(200);
+        expect(response.hasOwnProperty("data")).to.be.true
+        if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
+        expect(response.data.hasOwnProperty("co2"),"co2").to.be.true;
+        expect(response.data.hasOwnProperty("voltage"),"voltage").to.be.true;
+        expect(response.data.hasOwnProperty("volatileOrganicCompoundsTotal"),"volatileOrganicCompoundsTotal").to.be.false;
+        expect(response.data.hasOwnProperty("temperature"),"temperature").to.be.true;
+        expect(response.data.hasOwnProperty("relativeHumidity"),"relativeHumidity").to.be.false;
+        expect(response.data.hasOwnProperty("pressure"),"pressure").to.be.true;
+        expect(response.data.hasOwnProperty("elevation"),"elevation").to.be.false;
+        expect(response.data.co2.value).to.be.eql(440)
+        expect(response.data.temperature.value).to.be.eql(25)
+        expect(response.data.pressure.value).to.be.eql(1080)
+      
+    });
+    it('Check pushDeviceData fwG6ABEHZwAaADgEOgDd', async () => {
+        await expect(Decoder.pushDeviceData("urn:ngsi-ld:Device:chirpstack:test:00000","fwG6ABEHZwAaADgEOgDd","2016-03-15T11:20:00.000Z")).to.be.fulfilled;
+    })
+    it('GET urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1 => 200 OK', async () => {
+        var response = await expect(Decoder.sendRequest("GET", "/entities/urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1", "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
+        expect(response.status).to.be.eql(200);
+        expect(response.hasOwnProperty("data")).to.be.true
+        if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
+        expect(response.data.hasOwnProperty("co2"),"co2").to.be.true;
+        expect(response.data.hasOwnProperty("voltage"),"voltage").to.be.true;
+        expect(response.data.hasOwnProperty("volatileOrganicCompoundsTotal"),"volatileOrganicCompoundsTotal").to.be.true;
+        expect(response.data.hasOwnProperty("temperature"),"temperature").to.be.true;
+        expect(response.data.hasOwnProperty("relativeHumidity"),"relativeHumidity").to.be.true;
+        expect(response.data.hasOwnProperty("pressure"),"pressure").to.be.true;
+        expect(response.data.hasOwnProperty("elevation"),"elevation").to.be.true;
+        expect(response.data.co2.value).to.be.eql(442)
+        expect(response.data.voltage.value).to.be.eql(1895)
+        expect(response.data.volatileOrganicCompoundsTotal.value).to.be.eql(17)
+        expect(response.data.temperature.value).to.be.eql(26)
+        expect(response.data.relativeHumidity.value).to.be.eql(56)
+        expect(response.data.pressure.value).to.be.eql(1082)
+        expect(response.data.elevation.value).to.be.eql(221)
+      
+    });
+    it('Check pushDeviceData fwG9ABYFsAAcAC0CZgAA', async () => {
+        await expect(Decoder.pushDeviceData("urn:ngsi-ld:Device:chirpstack:test:00000","fwG9ABYFsAAcAC0CZgAA","2016-03-15T11:20:00.000Z")).to.be.fulfilled;
+    })
+    it('GET urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1 => 200 OK', async () => {
+        var response = await expect(Decoder.sendRequest("GET", "/entities/urn:ngsi-ld:AirQualityObserved:test:Co2:sensor1", "", "application/ld+json", "application/ld+json", "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"")).to.be.fulfilled;
+        expect(response.status).to.be.eql(200);
+        expect(response.hasOwnProperty("data")).to.be.true
+        if (Config.ShowData) console.log(JSON.stringify(response.data, null, 4));
+        expect(response.data.hasOwnProperty("co2"),"co2").to.be.true;
+        expect(response.data.hasOwnProperty("voltage"),"voltage").to.be.true;
+        expect(response.data.hasOwnProperty("volatileOrganicCompoundsTotal"),"volatileOrganicCompoundsTotal").to.be.true;
+        expect(response.data.hasOwnProperty("temperature"),"temperature").to.be.true;
+        expect(response.data.hasOwnProperty("relativeHumidity"),"relativeHumidity").to.be.true;
+        expect(response.data.hasOwnProperty("pressure"),"pressure").to.be.true;
+        expect(response.data.hasOwnProperty("elevation"),"elevation").to.be.true;
+        expect(response.data.co2.value).to.be.eql(445)
+        expect(response.data.voltage.value).to.be.eql(1456)
+        expect(response.data.volatileOrganicCompoundsTotal.value).to.be.eql(22)
+        expect(response.data.temperature.value).to.be.eql(28)
+        expect(response.data.relativeHumidity.value).to.be.eql(45)
+        expect(response.data.pressure.value).to.be.eql(614)
+        expect(response.data.elevation.value).to.be.eql(0)
+      
     });
 })
