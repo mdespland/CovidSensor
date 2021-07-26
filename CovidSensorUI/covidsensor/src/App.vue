@@ -1,15 +1,12 @@
 <template>
-  <div style="height:800px">  
-    <CO2SensorHistory :attribute="attribute"/>
-<!--     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor2"/>
-     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor3"/>
-     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor4"/>-->
-  <!--  <CO2Sensor/>-->
+  <div id="main">
+    <GraphSelector :attribute="attribute" @choose="chooseAttribute" id="menu"/>
+    <CO2SensorHistory :attribute="attribute" id="graph"/>
   </div>
 </template>
 
 <script>
-//import CO2Sensor from './components/CO2Sensor.vue'
+import GraphSelector from './components/GraphSelector.vue'
 import CO2SensorHistory from './components/CO2SensorHistory.vue'
 export default {
   name: 'App',
@@ -36,8 +33,14 @@ export default {
       ]
     };
   },
+  methods: {
+    chooseAttribute(attribute) {
+      console.log("Attribute switch to "+attribute)
+      this.attribute=attribute
+    }
+  },
   components: {
-//    CO2Sensor,
+    GraphSelector,
     CO2SensorHistory
   }
 }
@@ -50,6 +53,28 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 10px;
+  width: 100%;
+  height:100vh;
+  display: table;
+}
+#main {
+  height:100%;
+  clear: both;
+  width: 100%;
+  display:table-row;
+}
+
+#menu {
+  height:100%;
+  width:15%;
+  display: table-cell;
+  vertical-align: top;
+}
+
+#graph {
+  width:85%;
+  height:100%;
+  display: table-cell;
 }
 </style>

@@ -16,5 +16,5 @@ COPY ./src/ /app/src/
 #RUN vue build
 RUN npm run build
 
-FROM nginx as runner
-COPY --from=builder /app/ dist/ /usr/share/nginx/html/
+FROM nginx:stable as runner
+COPY --from=builder /app/dist/ /usr/share/nginx/html/

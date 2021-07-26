@@ -1,11 +1,11 @@
 <template>
-  <div style="height: 100%">
+  <div >
     <line-chart
       v-if="loaded"
       :chartData="chartdata"
       :options="options"
       :requested="requested"
-      style="height: 100%"
+      style="height:100%"
     />
   </div>
 </template>
@@ -185,5 +185,13 @@ export default {
   beforeUnmount: function () {
     this.cancelAutoUpdate();
   },
+  watch: {
+    attribute: function() {
+      if (!this.requested) {
+        console.log("Redraw charts on attribute")
+        this.loadSensorData();
+      }
+    }
+  }
 };
 </script>
