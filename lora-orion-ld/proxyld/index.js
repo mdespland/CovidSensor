@@ -65,12 +65,20 @@ app.all('*', async function (req, res, next) {
       var response;
       response = await axios.request(request);
       res.statusCode = response.status
-      res.headers = response.headers;
+      for (var header in response.headers) {
+        if (response.headers.hasOwnProperty(header)) {
+          res.setHeader(header, response.headers[header])
+        }
+      }
       res.send(response.data);
     } catch (error) {
       if ((error.hasOwnProperty("response")) && (error.response !== undefined)) {
         res.statusCode = error.response.status
-        res.headers = error.response.headers;
+        for (var header in error.response.headers) {
+          if (error.response.headers.hasOwnProperty(header)) {
+            res.setHeader(header, error.response.headers[header])
+          }
+        }
         res.send(error.response.data);
       } else {
         console.log(error);
@@ -91,12 +99,22 @@ app.all('*', async function (req, res, next) {
       var response;
       response = await axios.request(request);
       res.statusCode = response.status
-      res.headers = response.headers;
+      res.setHeader("mde", "mytest1")
+      for (var header in response.headers) {
+        if (response.headers.hasOwnProperty(header)) {
+          res.setHeader(header, response.headers[header])
+        }
+      }
+      console.log(JSON.stringify(res.headers, null, 4))
       res.send(response.data);
     } catch (error) {
       if ((error.hasOwnProperty("response")) && (error.response !== undefined)) {
         res.statusCode = error.response.status
-        res.headers = error.response.headers;
+        for (var header in error.response.headers) {
+          if (error.response.headers.hasOwnProperty(header)) {
+            res.setHeader(header, error.response.headers[header])
+          }
+        }
         res.send(error.response.data);
       } else {
         console.log(error);
