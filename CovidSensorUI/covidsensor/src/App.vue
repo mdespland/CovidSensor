@@ -1,6 +1,6 @@
 <template>
   <div style="height:800px">  
-    <CO2SensorHistory :sensors="sensors"/>
+    <CO2SensorHistory :attribute="attribute"/>
 <!--     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor2"/>
      <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor3"/>
      <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor4"/>-->
@@ -18,6 +18,7 @@ export default {
   },
   data() {
     return {
+      attribute: "co2",
       sensors: [ {
         id: "urn:ngsi-ld:AirQualityObserved:Co2:sensor1",
         backgroundColor: "#FF0000"

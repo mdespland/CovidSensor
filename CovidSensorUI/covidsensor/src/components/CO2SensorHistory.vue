@@ -1,6 +1,12 @@
 <template>
-  <div style="height:100%">
-    <line-chart v-if="loaded" :chartData="chartdata" :options="options" :requested="requested" style="height:100%; " />
+  <div style="height: 100%">
+    <line-chart
+      v-if="loaded"
+      :chartData="chartdata"
+      :options="options"
+      :requested="requested"
+      style="height: 100%"
+    />
   </div>
 </template>
 
@@ -22,8 +28,7 @@ const GRAPHICS_TIME_INTERVAL = 10 * 60 * 1000;
 export default {
   components: { LineChart },
   props: {
-    sensorid: String,
-    sensors: Array,
+    attribute: String,
   },
   data() {
     return {
@@ -62,54 +67,66 @@ export default {
           date.getMinutes();
       }
     },
-    async loadSensor(datasetid, sensorid, start, backgroundColor) {
-      this.chartdata.datasets[datasetid].label = sensorid;
-      this.chartdata.datasets[datasetid].borderColor = backgroundColor;
-      for (var i = 0; i < GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL; i++) {
-        this.chartdata.datasets[datasetid].data[i] = 0;
-      }
-      try {
-        var response = await ORIONLD.get(
-          "temporal/entities/" +
-            sensorid +
-            "?timeAt=" +
-            start.toISOString() +
-            "&timerel=after&attrs=co2&options=temporalValues"
-        );
-        if (
-          Object.prototype.hasOwnProperty.call(response.data, "co2") &&
-          Object.prototype.hasOwnProperty.call(response.data.co2, "values") &&
-          Array.isArray(response.data.co2.values)
-        ) {
-          for (i = 0; i < response.data.co2.values.length; i++) {
-            var date = new Date(response.data.co2.values[i][1]);
-            var indice = Math.floor(
-              (date.getTime() - start.getTime()) / GRAPHICS_TIME_INTERVAL
-            );
-            //console.log("Indice : "+indice+ "  :  "+response.data.co2.values[i][0])
-            this.chartdata.datasets[datasetid].data[indice] =
-              response.data.co2.values[i][0];
-          }
-        }
-      } catch (error) {
-        console.log("\tError :" + error);
-      }
-    },
-    async loadData() {
+    async loadSensorData() {
       var now = new Date(Date.now());
       console.log("Request start  :" + now.toISOString());
       if (!this.requested) {
         this.requested = true;
-        var start = new Date((Math.floor(Date.now() / GRAPHICS_TIME_INTERVAL) * GRAPHICS_TIME_INTERVAL) - GRAPHICS_TIME_RANGE);
+        var start = new Date(
+          Math.floor(Date.now() / GRAPHICS_TIME_INTERVAL) *
+            GRAPHICS_TIME_INTERVAL -
+            GRAPHICS_TIME_RANGE
+        );
         console.log("\tOrigin :" + start.toISOString());
-        this.loadLabels(start)
-        for (var j = 0; j < this.sensors.length; j++) {
-          await this.loadSensor(
-            j,
-            this.sensors[j].id,
-            start,
-            this.sensors[j].backgroundColor
+        this.loadLabels(start);
+        try {
+          this.chartdata.datasets = [];
+          var response = await ORIONLD.get(
+            "temporal/entities/" +
+              "?type=AirQualityObserved&timeAt=" +
+              start.toISOString() +
+              "&timerel=after&attrs=" +
+              this.attribute +
+              "&options=temporalValues&idPattern=urn:ngsi-ld:AirQualityObserved:Co2:*"
           );
+          if (Array.isArray(response.data)) {
+            for (var i = 0; i < response.data.length; i++) {
+              var dataset = this.initDataSet();
+              if (
+                Object.prototype.hasOwnProperty.call(response.data[i], "name")
+              ) {
+                dataset.label = response.data[i].name.value;
+              } else {
+                dataset.label = response.data[i].id;
+              }
+              dataset.borderColor = this.borderColor(i);
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  response.data[i],
+                  this.attribute
+                ) &&
+                Object.prototype.hasOwnProperty.call(
+                  response.data[i][this.attribute],
+                  "values"
+                ) &&
+                Array.isArray(response.data[i][this.attribute].values)
+              ) {
+                //here we can load the data
+                for (var j = 0; j < response.data[i][this.attribute].values.length; j++) {
+                  var date = new Date(response.data[i][this.attribute].values[j][1]);
+                  var indice = Math.floor(
+                    (date.getTime() - start.getTime()) / GRAPHICS_TIME_INTERVAL
+                  );
+                  //console.log("Indice : "+indice+ "  :  "+response.data.co2.values[i][0])
+                  dataset.data[indice] =
+                    response.data[i][this.attribute].values[j][0];
+                }
+              }
+              this.chartdata.datasets.push(dataset)
+            }
+          }
+        } catch (error) {
+          console.log("\tError :" + error);
         }
         //console.log("loadData  "+JSON.stringify(this.chartdata, null, 4))
         now = new Date(Date.now());
@@ -121,29 +138,49 @@ export default {
         console.log("\tAlready managing request  :" + now.toISOString());
       }
     },
-    cancelAutoUpdate() {
-      clearInterval(this.timer);
-    },
-  },
-  created: function () {
-    console.log("Sensors : " + JSON.stringify(this.sensors, null, 4))
-    console.log("Array size :"+GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL)
-    for (var j = 0; j < this.sensors.length; j++) {
+    initDataSet() {
       var data = {
         label: "",
         borderColor: "#f87979",
         data: new Array(GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL),
       };
-      this.chartdata.datasets.push(data);
-    }
-    for (var i = 0; i < GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL; i++) {
-      this.chartdata.labels[i] = "";
-      for (j = 0; j < this.sensors.length; j++) {
-        this.chartdata.datasets[j].data[i] = 0;
+      for (var i = 0; i < GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL; i++) {
+        data.data[i] = 0;
       }
-    }
-    this.loadData();
-    this.timer = setInterval(this.loadData, 10 * 60 * 1000);
+      return data;
+    },
+    borderColor(indice) {
+      var color = "#000000";
+      switch (indice) {
+        case 0:
+          color = "#990000";
+          break;
+        case 1:
+          color = "#009900";
+          break;
+        case 2:
+          color = "#000099";
+          break;
+        case 3:
+          color = "#990099";
+          break;
+        case 4:
+          color = "#009999";
+          break;
+        case 5:
+          color = "#999900";
+          break;
+      }
+      return color;
+    },
+    cancelAutoUpdate() {
+      clearInterval(this.timer);
+    },
+  },
+  created: function () {
+    
+    this.loadSensorData();
+    this.timer = setInterval(this.loadSensorData, 10 * 60 * 1000);
   },
   beforeUnmount: function () {
     this.cancelAutoUpdate();
