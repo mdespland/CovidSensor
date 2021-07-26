@@ -15,7 +15,8 @@ export default {
     options: {
       type: Object,
       default: null
-    }
+    },
+    requested: Boolean
   },
   mounted () {
     this.renderChart(this.chartData, this.options)
@@ -26,6 +27,12 @@ export default {
       //this.renderChart(this.data, this.options);
       this.renderChart(this.chartData, this.options)
     //this.setChartData(this.chartData)
+    },
+    requested: function() {
+      if (!this.requested) {
+        console.log("Redraw charts")
+        this.renderChart(this.chartData, this.options)
+      }
     }
   }
 }

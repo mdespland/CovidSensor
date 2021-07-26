@@ -1,6 +1,9 @@
 <template>
-  <div>  
-    <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor1"/>
+  <div style="height:800px">  
+    <CO2SensorHistory :sensors="sensors"/>
+<!--     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor2"/>
+     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor3"/>
+     <CO2SensorHistory sensorid="urn:ngsi-ld:AirQualityObserved:Co2:sensor4"/>-->
   <!--  <CO2Sensor/>-->
   </div>
 </template>
@@ -12,6 +15,25 @@ export default {
   name: 'App',
   provide:{
     ORION_API_URL : ''
+  },
+  data() {
+    return {
+      sensors: [ {
+        id: "urn:ngsi-ld:AirQualityObserved:Co2:sensor1",
+        backgroundColor: "#FF0000"
+      },{
+        id: "urn:ngsi-ld:AirQualityObserved:Co2:sensor2",
+        backgroundColor: "#00FF00"
+      },{
+        id: "urn:ngsi-ld:AirQualityObserved:Co2:sensor3",
+        backgroundColor: "#FFFF00"
+      },{
+        id: "urn:ngsi-ld:AirQualityObserved:Co2:sensor4",
+        backgroundColor: "#0000FF"
+      }
+
+      ]
+    };
   },
   components: {
 //    CO2Sensor,
