@@ -24,11 +24,22 @@
 #define CCS811_ADDR 0x5A //Alternate I2C Address
 #define BME280_ADDR 0x76
 
+#define MASK_CO2          B00000001
+#define MASK_TVOC         B00000010
+#define MASK_VOLTAGE      B00000100
+#define MASK_TEMPERATURE  B00001000
+#define MASK_HUMIDITY     B00010000
+#define MASK_PRESSURE     B00100000
+#define MASK_ALTITUDE     B01000000
+
+
+uint8_t provide=MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE;
 
 #define         READ_SAMPLE_INTERVAL         50    //define how many samples you are going to take in normal operation
-#define         READ_SAMPLE_TIMES            30     //define the time interval(in milisecond) between each samples in normal operation
+#define         READ_SAMPLE_TIMES            32     //define the time interval(in milisecond) between each samples in normal operation
 #define         READ_SAMPLE_DROP             3
-#define         WAIT_BETWEEN_MESSAGE         600000     
+#define         MAX_SAMPLE_DISTANCE             1
+#define         WAIT_BETWEEN_MESSAGE         600000
 
 
 #define debugSerial SerialUSB
@@ -53,13 +64,13 @@ void setup() {
   while ((!debugSerial) && (millis() < 10000)) ;
 
   OrangeForRN2483.init();
-  Serial.println("Initialization of the CCS811");
+  debugSerial.println("Initialization of the CCS811");
   Wire.begin();
   while (!ccs811.begin()) {
-    Serial.println("Failed to start CCS811 ! Please check your wiring.");
+    debugSerial.println("Failed to start CCS811 ! Please check your wiring.");
     delay(2000);
   }
-  Serial.println("Initialization of the BME280");
+  debugSerial.println("Initialization of the BME280");
   bme280.setI2CAddress(BME280_ADDR);
   while (! bme280.beginI2C()) {
     debugSerial.println("Failed to start BME280 ! Please check your wiring.");
@@ -72,75 +83,40 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   int i;
   int d;
   int j = 0;
-  float buffer[READ_SAMPLE_TIMES][4];
-  float v = 0;
-  for (i = 0; i < READ_SAMPLE_TIMES; i++) {
-    buffer[i][0] = 0;
-    buffer[i][1] = 0;
-    buffer[i][2] = 0;
-    buffer[i][3] = 0;
-  }
-  debugSerial.println("Reading Sample");
-  for (i = 0; i < READ_SAMPLE_TIMES; i++) {
-    v = 0;
-    //read humidity
-    v = bme280.readFloatHumidity();
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][0] != 0 && buffer[j][0] < v) j++;
-    if (buffer[j][0] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][0] = buffer[k - 1][0];
-    }
-    buffer[j][0] = v;
-    //readTemperature
-    v = bme280.readTempC();
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][1] != 0 && buffer[j][1] < v) j++;
-    if (buffer[j][1] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][1] = buffer[k - 1][1];
-    }
-    buffer[j][1] = v;
-    //readPressure
-    v = bme280.readFloatPressure();
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][2] != 0 && buffer[j][2] < v) j++;
-    if (buffer[j][2] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][2] = buffer[k - 1][2];
-    }
-    buffer[j][2] = v;
-    //readAltitude
-    v = bme280.readFloatAltitudeMeters();
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][3] != 0 && buffer[j][3] < v) j++;
-    if (buffer[j][3] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][3] = buffer[k - 1][3];
-    }
-    buffer[j][3] = v;
-    delay(READ_SAMPLE_INTERVAL);
-  }
-  debugSerial.println("Reading Sample done");
+  Sample * humidities = new Sample(READ_SAMPLE_TIMES);
+  Sample * temperatures = new Sample(READ_SAMPLE_TIMES);
+  Sample * pressures = new Sample(READ_SAMPLE_TIMES);
+  Sample * altitudes = new Sample(READ_SAMPLE_TIMES);
 
-  float total[4];
-  total[0] = 0;
-  total[1] = 0;
-  total[2] = 0;
-  total[3] = 0;
-  j = 0;
-  for (i = READ_SAMPLE_DROP; i < READ_SAMPLE_TIMES - READ_SAMPLE_DROP; i++) {
-    total[0] += buffer[i][0];
-    total[1] += buffer[i][1];
-    total[2] += buffer[i][2];
-    total[3] += buffer[i][3];
-    j++;
+  debugSerial.println("Reading Environmental Sample");
+  *humidity = -1;
+  *temperature = -1;
+  *pressure = -1;
+  *altitude = -1;
+  while (((*humidity) == -1) || ((*temperature) == -1) || ((*pressure) == -1) || ((*altitude) == -1)) {
+    humidities->init();
+    temperatures->init();
+    pressures->init();
+    altitudes->init();
+    for (i = 0; i < READ_SAMPLE_TIMES; i++) {
+      humidities->add(bme280.readFloatHumidity());
+      temperatures->add(bme280.readTempC());
+      pressures->add(bme280.readFloatPressure());
+      altitudes->add(bme280.readFloatAltitudeMeters());
+      delay(READ_SAMPLE_INTERVAL);
+    }
+    *humidity = humidities->value(MAX_SAMPLE_DISTANCE);
+    *temperature = temperatures->value(MAX_SAMPLE_DISTANCE);
+    *pressure = pressures->value(MAX_SAMPLE_DISTANCE);
+    *altitude = altitudes->value(5);
+    debugSerial.println("Reading Environmental Sample iteration");
   }
-  *humidity = total[0] / j;
-  *temperature = total[1] / j;
-  *pressure = total[2] / j;
-  *altitude = total[3] / j;
-  ccs811.setEnvironmentalData(*humidity,*temperature);
+  debugSerial.println("Reading Environmental Sample done");
+  delete humidities;
+  delete temperatures;
+  delete pressures;
+  delete altitudes;
+  ccs811.setEnvironmentalData(*humidity, *temperature);
 }
 
 
@@ -150,62 +126,45 @@ void readSampledData(uint16_t * eco2, uint16_t * tvoc)
   int i;
   int d;
   int j = 0;
-  uint16_t buffer[READ_SAMPLE_TIMES][2];
-  uint16_t v = 0;
-  for (i = 0; i < READ_SAMPLE_TIMES; i++) {
-    buffer[i][0] = 0;
-    buffer[i][1] = 0;
-  }
-  debugSerial.println("Reading Sample");
-  for (i = 0; i < READ_SAMPLE_TIMES; i++) {
-    v = 0;
-    while (!ccs811.dataAvailable()) {
-      debugSerial.print(".");
-      delay(100);
-    }
-    debugSerial.println(".");
-    ccs811.readAlgorithmResults();
-    //read eCO2
-    v = ccs811.getCO2();
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][0] != 0 && buffer[j][0] < v) j++;
-    if (buffer[j][0] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][0] = buffer[k - 1][0];
-    }
-    buffer[j][0] = v;
-    //readtVOC
-    v = ccs811.getTVOC();
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][1] != 0 && buffer[j][1] < v) j++;
-    if (buffer[j][1] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][1] = buffer[k - 1][1];
-    }
-    buffer[j][1] = v;
-    delay(READ_SAMPLE_INTERVAL);
-  }
-  debugSerial.println("Reading Sample done");
+  Sample * eco2s = new Sample(READ_SAMPLE_TIMES);
+  Sample * tvocs = new Sample(READ_SAMPLE_TIMES);
 
-  uint16_t total[2];
-  total[0] = 0;
-  total[1] = 0;
-  uint16_t result[2];
-  j = 0;
-  for (i = READ_SAMPLE_DROP; i < READ_SAMPLE_TIMES - READ_SAMPLE_DROP; i++) {
-    total[0] += buffer[i][0];
-    total[1] += buffer[i][1];
-    j++;
+  debugSerial.println("Reading Sample CO2/tVOC");
+  float eco2f = -1;
+  float tvocf = -1;
+  while ((eco2f == -1) || (tvocf == -1)) {
+    eco2s->init();
+    tvocs->init();
+    for (i = 0; i < READ_SAMPLE_TIMES; i++) {
+      while (!ccs811.dataAvailable()) {
+        debugSerial.print(".");
+        delay(100);
+      }
+      debugSerial.println(".");
+      ccs811.readAlgorithmResults();
+      eco2s->add(ccs811.getCO2());
+      tvocs->add(ccs811.getTVOC());
+      delay(READ_SAMPLE_INTERVAL);
+    }
+    debugSerial.print("eCo2 : ");
+    eco2f = eco2s->value(MAX_SAMPLE_DISTANCE);
+    debugSerial.print("tVoc : ");
+    tvocf = tvocs->value(25);
+    debugSerial.println("Reading Sample iteration");
   }
-  *eco2 = total[0] / j;
-  *tvoc = total[1] / j;
+  *eco2 = (uint16_t) eco2f;
+  *tvoc = (uint16_t) tvocf;
+
+  debugSerial.println("Reading Sample done");
+  delete eco2s;
+  delete tvocs;
 }
 
 bool SendLoRaMessage()
 {
   uint16_t eco2;
   uint16_t tvoc;
-  const uint8_t size = 4;
+  const uint8_t size = 13;
   uint8_t port = 5;
   uint8_t data[size];
   float humidity;
@@ -213,7 +172,7 @@ bool SendLoRaMessage()
   float pressure;
   float altitude;
 
-  adjustEnvironmentalData(&humidity,&temperature,&pressure,&altitude);
+  adjustEnvironmentalData(&humidity, &temperature, &pressure, &altitude);
   debugSerial.print(" Humidity: ");
   debugSerial.print(humidity, 0);
   debugSerial.print(" Pressure: ");
@@ -224,17 +183,25 @@ bool SendLoRaMessage()
   debugSerial.print(temperature, 2);
 
   debugSerial.println();
-
-
+  
   readSampledData(&eco2, &tvoc);
   debugSerial.print("ECO2 : ");
   debugSerial.print(eco2);
   debugSerial.print("TVOC : ");
   debugSerial.println(tvoc);
-  data[0] = (uint8_t)(eco2 >> 8);
-  data[1] = (uint8_t)(eco2);
-  data[2] = (uint8_t)(tvoc >> 8);
-  data[3] = (uint8_t)(tvoc);
+  data[0]=provide;
+  data[1] = (uint8_t)(eco2 >> 8);
+  data[2] = (uint8_t)(eco2);
+  data[3] = (uint8_t)(tvoc >> 8);
+  data[4] = (uint8_t)(tvoc);
+  data[5] = (uint8_t)(((uint16_t) temperature) >> 8);
+  data[6] = (uint8_t)(temperature);
+  data[7] = (uint8_t)(((uint16_t) (humidity)) >> 8);
+  data[8] = (uint8_t)(humidity);
+  data[9] = (uint8_t)(((uint16_t) (pressure/100)) >> 8);
+  data[10] = (uint8_t)(pressure/100);
+  data[11] = (uint8_t)(((uint16_t) altitude) >> 8);
+  data[12] = (uint8_t)(altitude);
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
