@@ -128,6 +128,13 @@ export default {
         } catch (error) {
           console.log("\tError :" + error);
         }
+        for (i=0;i<this.chartdata.datasets.length;i++) {
+          for (j=1;j<this.chartdata.datasets[i].data.length-1;j++) {
+            if ((this.chartdata.datasets[i].data[j-1]!==0) && (this.chartdata.datasets[i].data[j]===0) && (this.chartdata.datasets[i].data[j+1]!==0)) {
+              this.chartdata.datasets[i].data[j]=(this.chartdata.datasets[i].data[j-1]+this.chartdata.datasets[i].data[j+1])/2;
+            }
+          }
+        }
         //console.log("loadData  "+JSON.stringify(this.chartdata, null, 4))
         now = new Date(Date.now());
         this.requested = false;
