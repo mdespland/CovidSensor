@@ -1,7 +1,7 @@
 version: "3.3"
 services:
   chirpstack-network-server:
-    image: chirpstack-network-server:arm64
+    image: marcdespland/chirpstack-network-server:arm64
     volumes:
       - ./chirpstack/chirpstack-network-server:/etc/chirpstack-network-server
     depends_on:
@@ -13,7 +13,7 @@ services:
         max-size: "15m"
         max-file: "2"
   chirpstack-application-server:
-    image: chirpstack-application-server:arm64
+    image: marcdespland/chirpstack-application-server:arm64
     ports:
       - 8080:8080
     volumes:
@@ -26,7 +26,7 @@ services:
         max-size: "15m"
         max-file: "2"
   chirpstack-gateway-bridge:
-    image: chirpstack-gateway-bridge:arm64
+    image: marcdespland/chirpstack-gateway-bridge:arm64
     ipc: host
     ports:
       - 1700:1700/udp
