@@ -17,9 +17,10 @@
 
 #include <OrangeForRN2483.h>
 #include "Arduino.h"
+#include "Sample.h"
 
 /************************Hardware Related Macros************************************/
-#define       INPUT_VOLT                    (3.3)
+#define       INPUT_VOLT                    (6.6)
 #define       INPUT_RANGE                   (1023)
 /************************Hardware Related Macros************************************/
 #define         MG_PIN                       (A0)     //define which analog input channel you are going to use
@@ -28,19 +29,33 @@
 
 
 #define         READ_SAMPLE_INTERVAL         50    //define how many samples you are going to take in normal operation
-#define         READ_SAMPLE_TIMES            30     //define the time interval(in milisecond) between each samples in normal operation
+#define         READ_SAMPLE_TIMES            32     //define the time interval(in milisecond) between each samples in normal operation
 #define         READ_SAMPLE_DROP             3
-#define         WAIT_BETWEEN_MESSAGE         600000     
+#define         MAX_SAMPLE_DISTANCE             5
+#define         MAX_READ_SAMPLE_RETRY             10
+#define         WAIT_BETWEEN_MESSAGE         600000
 
 /**********************Application Related Macros**********************************/
 //These two values differ from sensor to sensor. user should derermine this value.
-#define         ZERO_POINT_VOLTAGE           (2.1/DC_GAIN) //define the output of the sensor in volts when the concentration of CO2 is 400PPM
+#define         ZERO_POINT_VOLTAGE           (3.3156/DC_GAIN) //define the output of the sensor in volts when the concentration of CO2 is 400PPM
 #define         REACTION_VOLTGAE             (0.030) //define the voltage drop of the sensor when move the sensor from air into 1000ppm CO2
-
+/*
+  REF_VOLT-((log10(REF_CO2)-2.602)*(-0.075))))*8.5
+  489 =3.31
+  317 => 3.26
+*/
 /*****************************Globals***********************************************/
-float           CO2Curve[3]  =  {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
+float           CO2Curve[3]  =  {2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE / (2.602 - 3))};
 
 #define debugSerial SerialUSB
+
+#define MASK_CO2          B00000001
+#define MASK_TVOC         B00000010
+#define MASK_VOLTAGE      B00000100
+#define MASK_TEMPERATURE  B00001000
+#define MASK_HUMIDITY     B00010000
+#define MASK_PRESSURE     B00100000
+#define MASK_ALTITUDE     B01000000
 
 // The following keys are for structure purpose only. You must define YOUR OWN.
 const uint8_t appEUI[8] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x02, 0xB1, 0x8A };
@@ -64,69 +79,49 @@ void setup() {
 
 int  MGGetPercentage(float volts, float *pcurve)
 {
-  return pow(10, ((volts/DC_GAIN)-pcurve[1])/pcurve[2]+pcurve[0]);
+  return pow(10, ((volts / DC_GAIN) - pcurve[1]) / pcurve[2] + pcurve[0]);
 }
 
+/* pow(10, ((volts-ZERO)/8.5)/-0.075)+2.602)
+  REF_VOLT-((log10(REF_CO2)-2.602)*(-0.075))))*8.5
+  489 =3.31
+  317 => 3.26
+*/
 
-void readSampledData(uint16_t * co2, uint16_t * volts)
+void readSampledData(float * co2, float * volt)
 {
   int i;
-  int d;
-  int j = 0;
-  uint16_t buffer[READ_SAMPLE_TIMES][2];
-  float v = 0;
-  for (i = 0; i < READ_SAMPLE_TIMES; i++) {
-    buffer[i][0] = 0;
-    buffer[i][1] = 0;
-  }
+  Sample * raws = new Sample(READ_SAMPLE_TIMES);
   debugSerial.println("Reading Sample");
-  for (i = 0; i < READ_SAMPLE_TIMES; i++) {
-    v = 0;
-    while (v==0) {
-      uint16_t raw=analogRead(MG_PIN);
-      debugSerial.print("Raw : ");
-      debugSerial.println(raw);
-      v=(raw*INPUT_VOLT/INPUT_RANGE);
+  int retry = 0;
+  float raw = -1;
+  *co2 = -1;
+  *volt = -1;
+  while ((raw == -1) && (retry < MAX_READ_SAMPLE_RETRY)) {
+    raws->init();
+    for (i = 0; i < READ_SAMPLE_TIMES; i++) {
+      raws->add(analogRead(MG_PIN));
+      delay(READ_SAMPLE_INTERVAL);
     }
-    j = 0;
-    uint16_t value=MGGetPercentage(v,CO2Curve);
-    while (j < READ_SAMPLE_TIMES && buffer[j][0] != 0 && buffer[j][0] < value) j++;
-    if (buffer[j][0] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][0] = buffer[k - 1][0];
-    }
-    buffer[j][0] = value;
-    value=v*100;
-    j = 0;
-    while (j < READ_SAMPLE_TIMES && buffer[j][1] != 0 && buffer[j][1] < value) j++;
-    if (buffer[j][1] != 0) {
-      int k = 0;
-      for (k = READ_SAMPLE_TIMES - 1; k > j; k--) buffer[k][1] = buffer[k - 1][1];
-    }
-    buffer[j][1] = value;
-    delay(READ_SAMPLE_INTERVAL);
+    debugSerial.print("Raw : ");
+    raw = raws->value(MAX_SAMPLE_DISTANCE);
+    debugSerial.println("Reading Sample iteration");
+    retry++;
+  }
+  if (raw!=-1) {
+    *volt = (raw * INPUT_VOLT / INPUT_RANGE);
+    *co2=MGGetPercentage(*volt, CO2Curve);
   }
   debugSerial.println("Reading Sample done");
-
-  uint16_t total[2];
-  total[0] = 0;
-  total[1] = 0;
-  uint16_t result[2];
-  j = 0;
-  for (i = READ_SAMPLE_DROP; i < READ_SAMPLE_TIMES - READ_SAMPLE_DROP; i++) {
-    total[0] += buffer[i][0];
-    total[1] += buffer[i][1];
-    j++;
-  }
-  *co2 = total[0] / j;
-  *volts = total[1] / j;
+  delete raws;
 }
+
 
 bool SendLoRaMessage()
 {
-  uint16_t eco2;
-  uint16_t volts;
-  const uint8_t size = 4;
+  float eco2;
+  float volts;
+  uint8_t size = 5;
   uint8_t port = 5;
   uint8_t data[size];
 
@@ -136,10 +131,21 @@ bool SendLoRaMessage()
   debugSerial.print(eco2);
   debugSerial.print(" Volts : ");
   debugSerial.println(volts);
-  data[0] = (uint8_t)(eco2 >> 8);
-  data[1] = (uint8_t)(eco2);
-  data[2] = (uint8_t)(volts >> 8);
-  data[3] = (uint8_t)(volts);
+
+  data[0] = 0;
+  size = 1;
+  if (eco2 != -1) {
+    data[0] |= MASK_CO2;
+    data[size] = (uint8_t)(((uint16_t) eco2) >> 8);
+    data[size + 1] = (uint8_t)(eco2);
+    size += 2;
+  }
+  if (volts != -1) {
+    data[0] |= MASK_VOLTAGE;
+    data[size] = (uint8_t)(((uint16_t) (volts*1000)) >> 8);
+    data[size + 1] = (uint8_t)(volts*1000);
+    size += 2;
+  }
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 

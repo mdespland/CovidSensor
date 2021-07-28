@@ -19,7 +19,7 @@
 #include <Wire.h>
 #include "SparkFunCCS811.h" //Click here to get the library: http://librarymanager/All#SparkFun_CCS811
 #include "SparkFunBME280.h"
-# include "Sample.h"
+#include "Sample.h"
 //#define CCS811_ADDR 0x5B //Default I2C Address
 #define CCS811_ADDR 0x5A //Alternate I2C Address
 #define BME280_ADDR 0x76
@@ -39,6 +39,7 @@ uint8_t provide=MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_P
 #define         READ_SAMPLE_TIMES            32     //define the time interval(in milisecond) between each samples in normal operation
 #define         READ_SAMPLE_DROP             3
 #define         MAX_SAMPLE_DISTANCE             1
+#define         MAX_READ_SAMPLE_RETRY           10
 #define         WAIT_BETWEEN_MESSAGE         600000
 
 
@@ -93,7 +94,8 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   *temperature = -1;
   *pressure = -1;
   *altitude = -1;
-  while (((*humidity) == -1) || ((*temperature) == -1) || ((*pressure) == -1) || ((*altitude) == -1)) {
+  int retry=0;
+  while ((((*humidity) == -1) || ((*temperature) == -1) || ((*pressure) == -1) || ((*altitude) == -1))  && (retry<MAX_READ_SAMPLE_RETRY)) {
     humidities->init();
     temperatures->init();
     pressures->init();
@@ -110,18 +112,21 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
     *pressure = pressures->value(MAX_SAMPLE_DISTANCE);
     *altitude = altitudes->value(5);
     debugSerial.println("Reading Environmental Sample iteration");
+    retry++;
   }
   debugSerial.println("Reading Environmental Sample done");
   delete humidities;
   delete temperatures;
   delete pressures;
   delete altitudes;
-  ccs811.setEnvironmentalData(*humidity, *temperature);
+  if ((*humidity>0) && (*temperature>0)) {
+    ccs811.setEnvironmentalData(*humidity, *temperature);
+  }
 }
 
 
 
-void readSampledData(uint16_t * eco2, uint16_t * tvoc)
+void readSampledData(float * eco2, float * tvoc, float * humidity, float * temperature, float * pressure, float * altitude)
 {
   int i;
   int d;
@@ -130,9 +135,11 @@ void readSampledData(uint16_t * eco2, uint16_t * tvoc)
   Sample * tvocs = new Sample(READ_SAMPLE_TIMES);
 
   debugSerial.println("Reading Sample CO2/tVOC");
-  float eco2f = -1;
-  float tvocf = -1;
-  while ((eco2f == -1) || (tvocf == -1)) {
+  *eco2 = -1;
+  *tvoc = -1;
+  int retry=0;
+  while (((*eco2 == -1) || (*tvoc == -1)) && (retry<MAX_READ_SAMPLE_RETRY)) {
+    adjustEnvironmentalData(humidity, temperature, pressure, altitude);
     eco2s->init();
     tvocs->init();
     for (i = 0; i < READ_SAMPLE_TIMES; i++) {
@@ -147,14 +154,12 @@ void readSampledData(uint16_t * eco2, uint16_t * tvoc)
       delay(READ_SAMPLE_INTERVAL);
     }
     debugSerial.print("eCo2 : ");
-    eco2f = eco2s->value(MAX_SAMPLE_DISTANCE);
+    *eco2 = eco2s->value(MAX_SAMPLE_DISTANCE);
     debugSerial.print("tVoc : ");
-    tvocf = tvocs->value(25);
+    *tvoc = tvocs->value(25);
     debugSerial.println("Reading Sample iteration");
+    retry++;
   }
-  *eco2 = (uint16_t) eco2f;
-  *tvoc = (uint16_t) tvocf;
-
   debugSerial.println("Reading Sample done");
   delete eco2s;
   delete tvocs;
@@ -162,9 +167,9 @@ void readSampledData(uint16_t * eco2, uint16_t * tvoc)
 
 bool SendLoRaMessage()
 {
-  uint16_t eco2;
-  uint16_t tvoc;
-  const uint8_t size = 13;
+  float eco2;
+  float tvoc;
+  uint8_t size = 13;
   uint8_t port = 5;
   uint8_t data[size];
   float humidity;
@@ -172,7 +177,7 @@ bool SendLoRaMessage()
   float pressure;
   float altitude;
 
-  adjustEnvironmentalData(&humidity, &temperature, &pressure, &altitude);
+  readSampledData(&eco2, &tvoc,&humidity, &temperature, &pressure, &altitude);
   debugSerial.print(" Humidity: ");
   debugSerial.print(humidity, 0);
   debugSerial.print(" Pressure: ");
@@ -183,25 +188,48 @@ bool SendLoRaMessage()
   debugSerial.print(temperature, 2);
 
   debugSerial.println();
-  
-  readSampledData(&eco2, &tvoc);
   debugSerial.print("ECO2 : ");
   debugSerial.print(eco2);
   debugSerial.print("TVOC : ");
   debugSerial.println(tvoc);
-  data[0]=provide;
-  data[1] = (uint8_t)(eco2 >> 8);
-  data[2] = (uint8_t)(eco2);
-  data[3] = (uint8_t)(tvoc >> 8);
-  data[4] = (uint8_t)(tvoc);
-  data[5] = (uint8_t)(((uint16_t) temperature) >> 8);
-  data[6] = (uint8_t)(temperature);
-  data[7] = (uint8_t)(((uint16_t) (humidity)) >> 8);
-  data[8] = (uint8_t)(humidity);
-  data[9] = (uint8_t)(((uint16_t) (pressure/100)) >> 8);
-  data[10] = (uint8_t)(pressure/100);
-  data[11] = (uint8_t)(((uint16_t) altitude) >> 8);
-  data[12] = (uint8_t)(altitude);
+  data[0]=0;
+  size=1;//MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE
+  if (eco2!=-1) {
+    data[0]|=MASK_CO2;
+    data[size]=(uint8_t)(((uint16_t) eco2) >> 8);
+    data[size+1] = (uint8_t)(eco2);
+    size+=2;
+  }
+  if (tvoc!=-1) {
+    data[0]|=MASK_TVOC;
+    data[size]=(uint8_t)(((uint16_t) tvoc) >> 8);
+    data[size+1] = (uint8_t)(tvoc);
+    size+=2;
+  }
+  if (temperature!=-1) {
+    data[0]|=MASK_TEMPERATURE;
+    data[size]=(uint8_t)(((uint16_t) temperature) >> 8);
+    data[size+1] = (uint8_t)(temperature);
+    size+=2;
+  }
+  if (humidity!=-1) {
+    data[0]|=MASK_HUMIDITY;
+    data[size]=(uint8_t)(((uint16_t) humidity) >> 8);
+    data[size+1] = (uint8_t)(humidity);
+    size+=2;
+  }
+  if (pressure!=-1) {
+    data[0]|=MASK_PRESSURE;
+    data[size]=(uint8_t)(((uint16_t) (pressure/100)) >> 8);
+    data[size+1] = (uint8_t)(pressure/100);
+    size+=2;
+  }
+  if (altitude!=-1) {
+    data[0]|=MASK_ALTITUDE;
+    data[size]=(uint8_t)(((uint16_t) altitude) >> 8);
+    data[size+1] = (uint8_t)(altitude);
+    size+=2;
+  }
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
