@@ -1,11 +1,11 @@
 <template>
-  <div >
+  <div>
     <line-chart
       v-if="loaded"
       :chartData="chartdata"
       :options="options"
       :requested="requested"
-      style="height:100%"
+      style="height: 100%"
     />
   </div>
 </template>
@@ -44,6 +44,18 @@ export default {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        scales: {
+          yAxes: [
+            {
+              ticks: {
+                beginAtZero: true,
+              },
+            },
+          ],
+        },
+        animation: {
+          duration: 0, // general animation time
+        }
       },
       timer: "",
     };
@@ -112,8 +124,14 @@ export default {
                 Array.isArray(response.data[i][this.attribute].values)
               ) {
                 //here we can load the data
-                for (var j = 0; j < response.data[i][this.attribute].values.length; j++) {
-                  var date = new Date(response.data[i][this.attribute].values[j][1]);
+                for (
+                  var j = 0;
+                  j < response.data[i][this.attribute].values.length;
+                  j++
+                ) {
+                  var date = new Date(
+                    response.data[i][this.attribute].values[j][1]
+                  );
                   var indice = Math.floor(
                     (date.getTime() - start.getTime()) / GRAPHICS_TIME_INTERVAL
                   );
@@ -122,7 +140,7 @@ export default {
                     response.data[i][this.attribute].values[j][0];
                 }
               }
-              this.chartdata.datasets.push(dataset)
+              this.chartdata.datasets.push(dataset);
             }
           }
         } catch (error) {
@@ -185,7 +203,6 @@ export default {
     },
   },
   created: function () {
-    
     this.loadSensorData();
     this.timer = setInterval(this.loadSensorData, 10 * 60 * 1000);
   },
@@ -193,12 +210,12 @@ export default {
     this.cancelAutoUpdate();
   },
   watch: {
-    attribute: function() {
+    attribute: function () {
       if (!this.requested) {
-        console.log("Redraw charts on attribute")
+        console.log("Redraw charts on attribute");
         this.loadSensorData();
       }
-    }
-  }
+    },
+  },
 };
 </script>
