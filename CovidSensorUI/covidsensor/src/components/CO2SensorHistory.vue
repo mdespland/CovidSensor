@@ -33,7 +33,9 @@ export default {
   data() {
     return {
       count: 0,
-      sensor: null,
+      sensors: {
+        indice:0
+      },
       errors: [],
       loaded: false,
       requested: false,
@@ -55,7 +57,7 @@ export default {
         },
         animation: {
           duration: 0, // general animation time
-        }
+        },
       },
       timer: "",
     };
@@ -103,15 +105,7 @@ export default {
           );
           if (Array.isArray(response.data)) {
             for (var i = 0; i < response.data.length; i++) {
-              var dataset = this.initDataSet();
-              if (
-                Object.prototype.hasOwnProperty.call(response.data[i], "name")
-              ) {
-                dataset.label = response.data[i].name.value;
-              } else {
-                dataset.label = response.data[i].id;
-              }
-              dataset.borderColor = this.borderColor(i);
+              var dataset = this.initDataSet(response.data[i]);
               if (
                 Object.prototype.hasOwnProperty.call(
                   response.data[i],
@@ -156,12 +150,22 @@ export default {
         console.log("\tAlready managing request  :" + now.toISOString());
       }
     },
-    initDataSet() {
+    initDataSet(sensor) {
       var data = {
         label: "",
         borderColor: "#f87979",
         data: new Array(GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL),
       };
+      if (Object.prototype.hasOwnProperty.call(sensor, "name")) {
+        data.label = sensor.name.value;
+      } else {
+        data.label = sensor.id;
+      }
+      if (!Object.prototype.hasOwnProperty.call(this.sensors, sensor.id)) {
+        this.sensors[sensor.id]=this.borderColor(this.sensors.indice);
+        this.sensors.indice++;
+      }
+      data.borderColor=this.sensors[sensor.id];
       for (var i = 0; i < GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL; i++) {
         data.data[i] = 0;
       }
