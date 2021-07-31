@@ -88,6 +88,6 @@ float Sample::value(float maxdeviation) {
     debugSerial.println(percentage);
     
   }
-  if (drop>=(size/4)) averagef=-1;
+  if (drop>=(size/4)) averagef=NULL_SAMPLE_VALUE;
   return averagef;
 }

@@ -90,12 +90,12 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   Sample * altitudes = new Sample(READ_SAMPLE_TIMES);
 
   debugSerial.println("Reading Environmental Sample");
-  *humidity = -1;
-  *temperature = -1;
-  *pressure = -1;
-  *altitude = -1;
+  *humidity = NULL_SAMPLE_VALUE;
+  *temperature = NULL_SAMPLE_VALUE;
+  *pressure = NULL_SAMPLE_VALUE;
+  *altitude = NULL_SAMPLE_VALUE;
   int retry=0;
-  while ((((*humidity) == -1) || ((*temperature) == -1) || ((*pressure) == -1) || ((*altitude) == -1))  && (retry<MAX_READ_SAMPLE_RETRY)) {
+  while ((((*humidity) == NULL_SAMPLE_VALUE) || ((*temperature) == NULL_SAMPLE_VALUE) || ((*pressure) == NULL_SAMPLE_VALUE) || ((*altitude) == NULL_SAMPLE_VALUE))  && (retry<MAX_READ_SAMPLE_RETRY)) {
     humidities->init();
     temperatures->init();
     pressures->init();
@@ -119,7 +119,7 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   delete temperatures;
   delete pressures;
   delete altitudes;
-  if ((*humidity>0) && (*temperature>0)) {
+  if ((*humidity!=NULL_SAMPLE_VALUE) && (*temperature!=NULL_SAMPLE_VALUE)) {
     ccs811.setEnvironmentalData(*humidity, *temperature);
   }
 }
@@ -135,10 +135,10 @@ void readSampledData(float * eco2, float * tvoc, float * humidity, float * tempe
   Sample * tvocs = new Sample(READ_SAMPLE_TIMES);
 
   debugSerial.println("Reading Sample CO2/tVOC");
-  *eco2 = -1;
-  *tvoc = -1;
+  *eco2 = NULL_SAMPLE_VALUE;
+  *tvoc = NULL_SAMPLE_VALUE;
   int retry=0;
-  while (((*eco2 == -1) || (*tvoc == -1)) && (retry<MAX_READ_SAMPLE_RETRY)) {
+  while (((*eco2 == NULL_SAMPLE_VALUE) || (*tvoc == NULL_SAMPLE_VALUE)) && (retry<MAX_READ_SAMPLE_RETRY)) {
     adjustEnvironmentalData(humidity, temperature, pressure, altitude);
     eco2s->init();
     tvocs->init();
@@ -194,37 +194,37 @@ bool SendLoRaMessage()
   debugSerial.println(tvoc);
   data[0]=0;
   size=1;//MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE
-  if (eco2!=-1) {
+  if (eco2!=NULL_SAMPLE_VALUE) {
     data[0]|=MASK_CO2;
     data[size]=(uint8_t)(((uint16_t) eco2) >> 8);
     data[size+1] = (uint8_t)(eco2);
     size+=2;
   }
-  if (tvoc!=-1) {
+  if (tvoc!=NULL_SAMPLE_VALUE) {
     data[0]|=MASK_TVOC;
     data[size]=(uint8_t)(((uint16_t) tvoc) >> 8);
     data[size+1] = (uint8_t)(tvoc);
     size+=2;
   }
-  if (temperature!=-1) {
+  if (temperature!=NULL_SAMPLE_VALUE) {
     data[0]|=MASK_TEMPERATURE;
     data[size]=(uint8_t)(((uint16_t) temperature) >> 8);
     data[size+1] = (uint8_t)(temperature);
     size+=2;
   }
-  if (humidity!=-1) {
+  if (humidity!=NULL_SAMPLE_VALUE) {
     data[0]|=MASK_HUMIDITY;
     data[size]=(uint8_t)(((uint16_t) humidity) >> 8);
     data[size+1] = (uint8_t)(humidity);
     size+=2;
   }
-  if (pressure!=-1) {
+  if (pressure!=NULL_SAMPLE_VALUE) {
     data[0]|=MASK_PRESSURE;
     data[size]=(uint8_t)(((uint16_t) (pressure/100)) >> 8);
     data[size+1] = (uint8_t)(pressure/100);
     size+=2;
   }
-  if (altitude!=-1) {
+  if (altitude!=NULL_SAMPLE_VALUE) {
     data[0]|=MASK_ALTITUDE;
     data[size]=(uint8_t)(((uint16_t) altitude) >> 8);
     data[size+1] = (uint8_t)(altitude);
