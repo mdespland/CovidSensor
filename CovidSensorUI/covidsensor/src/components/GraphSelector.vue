@@ -18,7 +18,7 @@
 .selector {
     width: 90%;
     height:60px;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     font-family: Arial, Helvetica, sans-serif;
     background-color: #8a9900;

@@ -5,7 +5,7 @@
 * [ESP32 LoraWan](https://github.com/HelTecAutomation/ESP32_LoRaWAN)
 
 # Documentation about RPI4
-* [RPI4 OS64 bit](https://downloads.raspberrypi.org/raspios_arm64/images/)
+* [RPI4 OS64 bit](https://downloads.raspberryhttps://www.wiki.somlabs.com/index.php/How_to_enable_support_for_FT5x06_Multi-Touch_Controller_on_VisionSOM-6ULLpi.org/raspios_arm64/images/)
 * [Tutorial Installation](https://raspberrytips.com/raspberry-pi-os-64-bits-vs-32-bits/)
 
 ```
