@@ -107,10 +107,14 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
       altitudes->add(bme280.readFloatAltitudeMeters());
       delay(READ_SAMPLE_INTERVAL);
     }
-    *humidity = humidities->value(MAX_SAMPLE_DISTANCE);
-    *temperature = temperatures->value(MAX_SAMPLE_DISTANCE);
-    *pressure = pressures->value(MAX_SAMPLE_DISTANCE);
-    *altitude = altitudes->value(5);
+    float median=humidities->value(MAX_SAMPLE_DISTANCE);
+    *humidity = median==NULL_SAMPLE_VALUE ? *humidity : median;
+    median=temperatures->value(MAX_SAMPLE_DISTANCE);
+    *temperature = median==NULL_SAMPLE_VALUE ? *temperature : median;
+    median=pressures->value(MAX_SAMPLE_DISTANCE);
+    *pressure = median==NULL_SAMPLE_VALUE ? *pressure : median;
+    median=altitudes->value(5);
+    *altitude = median==NULL_SAMPLE_VALUE ? *altitude : median;
     debugSerial.println("Reading Environmental Sample iteration");
     retry++;
   }
@@ -154,9 +158,11 @@ void readSampledData(float * eco2, float * tvoc, float * humidity, float * tempe
       delay(READ_SAMPLE_INTERVAL);
     }
     debugSerial.print("eCo2 : ");
-    *eco2 = eco2s->value(MAX_SAMPLE_DISTANCE);
+    float median=eco2s->value(MAX_SAMPLE_DISTANCE);
+    *eco2 = median==NULL_SAMPLE_VALUE ? *eco2 : median;
     debugSerial.print("tVoc : ");
-    *tvoc = tvocs->value(25);
+    median=tvocs->value(25);
+    *tvoc = median==NULL_SAMPLE_VALUE ? *tvoc : median;
     debugSerial.println("Reading Sample iteration");
     retry++;
   }
