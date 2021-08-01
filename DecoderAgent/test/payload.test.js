@@ -176,4 +176,10 @@ const MASK_ALTITUDE = 0B01000000
         indice+=2
         expect(buff.toString('base64')).to.be.eql("fwG9ABYFsAAcAC0CZgAA")
     })
+    it('Decode Lora Payload ewOWAE4AFgAyA/X//w==', async () => {
+        var value="ewOWAE4AFgAyA/X//w=="
+        const buff = Buffer.from(value, 'base64');
+        console.log(buff);
+
+    })
 })

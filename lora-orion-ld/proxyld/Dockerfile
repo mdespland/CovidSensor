@@ -27,4 +27,6 @@ ENV ORION_API_URL=http://orion:1026/ngsi-ld/v1
 ENV MINTAKA_API_URL=http://mintaka:8080
 ENV APP_API_URL=http://covidsensorui
 ENV BASE_PATH_NGSILD=/ngsi-ld/v1
-ENTRYPOINT ["npm", "start"]
+COPY ./wait-for-it.sh /
+RUN chmod u+rx /wait-for-it.sh
+ENTRYPOINT [ "/wait-for-it.sh", "--host=mintaka", "--port=8080", "--timeout=120", "--", "npm", "start"]

@@ -122,6 +122,97 @@ sudo cp default/chirpstack-concentratord /etc/default/
 sudo update-rc.d chirpstack-concentratord defaults
 ```
 
+# Connecting 7inch screen
+
+## RPI Official
+
+Edit ```/boot/config.txt``` to comment the following lines
+
+```
+#dtoverlay=vc4-fkms-v3d
+#max_framebuffers=2
+```
+
+## WaveShare 1024x600 (not tested yet)
+
+Edit ```/boot/config.txt``` to comment the following lines
+
+```
+#dtoverlay=vc4-fkms-v3d
+#max_framebuffers=2
+```
+
+And add the next one
+
+```
+max_usb_current=1
+hdmi_force_hotplug=1
+config_hdmi_boost=7
+hdmi_group=2
+hdmi_mode=88
+hdmi_drive=1
+hdmi_cvt 1024 600 60 6 0 0 0
+```
+
+# RPI Autostart
+
+```
+mkdir -p .config/lxsession/LXDE-pi
+vi .config/lxsession/LXDE-pi/autostart
+```
+
+```
+@lxpanel --profile LXDE-pi
+@pcmanfm --desktop --profile LXDE-pi
+#@xscreensaver -no-splash
+@point-rpi
+@/usr/bin/chromium --incognito --start-maximized --kiosk --disable-restore-session-state http://127.0.0.1:8082
+@uncluster
+@xset s off
+@xset s noblank
+@xset -dpms
+```
+
+Check the log after login to verify issues
+
+```
+at .xsession-errors
+Xsession: X session started for pi at Fri 30 Jul 2021 10:45:53 PM CEST
+dbus-update-activation-environment: setting DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+dbus-update-activation-environment: setting DISPLAY=:0
+dbus-update-activation-environment: setting XAUTHORITY=/home/pi/.Xauthority
+localuser:pi being added to access control list
+dbus-update-activation-environment: setting USER=pi
+dbus-update-activation-environment: setting LANGUAGE=en_US.UTF-8
+dbus-update-activation-environment: setting TEXTDOMAIN=Linux-PAM
+dbus-update-activation-environment: setting XDG_SESSION_TYPE=x11
+dbus-update-activation-environment: setting HOME=/home/pi
+dbus-update-activation-environment: setting DESKTOP_SESSION=lightdm-xsession
+dbus-update-activation-environment: setting XDG_SEAT_PATH=/org/freedesktop/DisplayManager/Seat0
+dbus-update-activation-environment: setting DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+dbus-update-activation-environment: setting LOGNAME=pi
+dbus-update-activation-environment: setting XDG_SESSION_CLASS=user
+dbus-update-activation-environment: setting PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
+dbus-update-activation-environment: setting XDG_SESSION_PATH=/org/freedesktop/DisplayManager/Session0
+dbus-update-activation-environment: setting XDG_RUNTIME_DIR=/run/user/1000
+dbus-update-activation-environment: setting DISPLAY=:0
+dbus-update-activation-environment: setting LANG=en_US.UTF-8
+dbus-update-activation-environment: setting XDG_SESSION_DESKTOP=lightdm-xsession
+dbus-update-activation-environment: setting XAUTHORITY=/home/pi/.Xauthority
+dbus-update-activation-environment: setting XDG_GREETER_DATA_DIR=/var/lib/lightdm/data/pi
+dbus-update-activation-environment: setting SHELL=/bin/bash
+dbus-update-activation-environment: setting GDMSESSION=lightdm-xsession
+dbus-update-activation-environment: setting NO_AT_BRIDGE=1
+dbus-update-activation-environment: setting GPG_AGENT_INFO=/run/user/1000/gnupg/S.gpg-agent:0:1
+dbus-update-activation-environment: setting LC_ALL=en_US.UTF-8
+dbus-update-activation-environment: setting PWD=/home/pi
+** Message: 22:45:55.096: main.vala:101: Session is LXDE-pi
+** Message: 22:45:55.096: main.vala:102: DE is LXDE
+** Message: 22:45:55.508: main.vala:133: log directory: /home/pi/.cache/lxsession/LXDE-pi
+** Message: 22:45:55.508: main.vala:134: log path: /home/pi/.cache/lxsession/LXDE-pi/run.log
+```
+
+
 # Resources
 
 ## Documentation about ESP32 
@@ -140,3 +231,9 @@ sudo update-rc.d chirpstack-concentratord defaults
 * [ic880a-spi QuickStart Guide](https://webshop.ideetron.nl/Files/3/1000/1211/Attachments/Product/9Sl3U5tf7B238WGCZ1V7PRmw2768t90K.pdf)
 * [Sample gateway](https://www.rs-online.com/designspark/building-a-raspberry-pi-powered-lorawan-gateway)
 * [chirpstack](https://www.chirpstack.io)
+
+## Screen
+
+* [Pierre Alexaline](https://gist.github.com/pierrealexaline/0aa6d38ccdcf6cb21fc4c22387a413be)
+* [RPI config.txt](https://www.raspberrypi.org/documentation/configuration/config-txt/video.md)
+* [WaveShare 7inch LCD C](https://www.waveshare.com/wiki/7inch_HDMI_LCD_(C))

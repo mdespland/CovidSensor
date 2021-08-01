@@ -205,9 +205,9 @@ async function updateAirQualityObserved(id, data, now) {
                 if ((buff.readUInt8(0) & MASK_VOLTAGE) === MASK_VOLTAGE) {
                     if (Config.Debug) console.log("\tHAVE VOLTAGE")
                     if (entity.hasOwnProperty("voltage")) {
-                        update.voltage=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"VLT", now)
+                        update.voltage=formatAttribute((buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1))/1000,"VLT", now)
                     } else {
-                        create.voltage=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"VLT", now)
+                        create.voltage=formatAttribute((buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1))/1000,"VLT", now)
                         created=true;
                     }
                     indice += 2;
@@ -244,6 +244,8 @@ async function updateAirQualityObserved(id, data, now) {
                 }
                 if ((buff.readUInt8(0) & MASK_ALTITUDE)  === MASK_ALTITUDE ) {
                     if (Config.Debug) console.log("\tHAVE ALTITUDE")
+                    var elevation=buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1);
+                    if (elevation>(65536/2)) elevation=elevation-65536;
                     if (entity.hasOwnProperty("elevation")) {
                         update.elevation=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"MTR", now)
                     } else {

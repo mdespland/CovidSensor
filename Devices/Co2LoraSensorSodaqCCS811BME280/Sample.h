@@ -2,6 +2,8 @@
 #define _SAMPLE_H
 #include <Arduino.h>
 
+#define NULL_SAMPLE_VALUE 65536
+
 class Sample {
 private:
   float * data=NULL;
