@@ -31,14 +31,19 @@
 #define MASK_HUMIDITY     B00010000
 #define MASK_PRESSURE     B00100000
 #define MASK_ALTITUDE     B01000000
+#define MASK_OPTIONS      B10000000
 
+#define MASK_OPTION_BASELINE B00000001
+#define MASK_OPTION_STD_CO2  B00000010
+
+#define MAX_MESSAGE_SIZE (1+2*7+1+2*2)
 
 uint8_t provide=MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE;
 
 #define         READ_SAMPLE_INTERVAL         50    //define how many samples you are going to take in normal operation
 #define         READ_SAMPLE_TIMES            32     //define the time interval(in milisecond) between each samples in normal operation
 #define         READ_SAMPLE_DROP             3
-#define         MAX_SAMPLE_DISTANCE             1
+#define         MAX_SAMPLE_DISTANCE             5
 #define         MAX_READ_SAMPLE_RETRY           10
 #define         WAIT_BETWEEN_MESSAGE         600000
 
@@ -175,7 +180,7 @@ bool SendLoRaMessage()
 {
   float eco2;
   float tvoc;
-  uint8_t size = 13;
+  uint8_t size = MAX_MESSAGE_SIZE;
   uint8_t port = 5;
   uint8_t data[size];
   float humidity;
@@ -236,6 +241,16 @@ bool SendLoRaMessage()
     data[size+1] = (uint8_t)(altitude);
     size+=2;
   }
+  data[0]|=MASK_OPTIONS;
+  int option=size;
+  size+=1;
+  data[option]=MASK_OPTION_BASELINE;
+  uint16_t baseline=ccs811.getBaseline();
+  debugSerial.print("Baseline : ");
+  debugSerial.println(baseline);
+  data[size]=(uint8_t)(baseline >> 8);
+  data[size+1] = (uint8_t)(baseline);
+  size+=2;
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 

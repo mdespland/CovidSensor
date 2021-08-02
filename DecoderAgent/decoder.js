@@ -27,7 +27,10 @@ const MASK_TEMPERATURE =    0B00001000
 const MASK_HUMIDITY =       0B00010000
 const MASK_PRESSURE =       0B00100000
 const MASK_ALTITUDE =       0B01000000
+const MASK_OPTIONS=         0B10000000
 
+const MASK_OPTION_BASELINE= 0B00000001
+const MASK_OPTION_STD_CO2=  0B00000010
 /*
 function decodeDeviceData(data) {
     const buff = Buffer.from(data, 'base64');
@@ -253,6 +256,21 @@ async function updateAirQualityObserved(id, data, now) {
                         created=true;
                     }
                     indice += 2;
+                }
+                if ((buff.readUInt8(0) & MASK_OPTIONS)  === MASK_OPTIONS ) {
+                    if (Config.Debug) console.log("\tHAVE OPTIONS")
+                    var option=indice;
+                    indice+=1;
+                    if ((buff.readUInt8(option) & MASK_OPTION_BASELINE)  === MASK_OPTION_BASELINE ) {
+                        var baseline=buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1);
+                        if (entity.hasOwnProperty("baseline")) {
+                            update.baseline=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"RAW", now)
+                        } else {
+                            create.baseline=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"RAW", now)
+                            created=true;
+                        }
+                        indice += 2;
+                    }
                 }
             }
         }
