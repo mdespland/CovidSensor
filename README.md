@@ -2,6 +2,8 @@ Use CO2 sensor to detect when it is needed to open the window
 
 Based on RPI4, FIWARE NGSI-LD and Chirpstack
 
+[Details about the sensors](./Co2DeviceSensor.md) 
+
 # FIWARE NGSI-LD
 
 NGSI-LD is the new [FIWARE](https://fiware.org) standard. Several brocker are available, but Orion-LD is the only one small enough to work on a RPI4.
@@ -215,11 +217,12 @@ dbus-update-activation-environment: setting PWD=/home/pi
 
 # Resources
 
-## Documentation about ESP32 
+## Documentation about ESP32 / Arduino
 * [Heltec ESP32 lora/wifi kit doc](https://heltec-automation-docs.readthedocs.io/en/latest/esp32/wifi_lora_32/index.html)
 * [CO2 Sensor](https://wiki.dfrobot.com/CO2_Sensor_SKU_SEN0159)
 * [ESP32 lora/wifi kit pinout](https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/blob/master/PinoutDiagram/WIFI_LoRa_32_V2.pdf)
 * [ESP32 LoraWan](https://github.com/HelTecAutomation/ESP32_LoRaWAN)
+* [CCS811 Sparkfun Library](https://github.com/sparkfun/SparkFun_CCS811_Arduino_Library)
 
 ## Documentation about RPI4
 * [RPI4 OS64 bit](https://downloads.raspberrypi.org/raspios_arm64/images/)
