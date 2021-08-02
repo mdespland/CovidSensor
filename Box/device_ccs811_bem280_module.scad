@@ -98,7 +98,7 @@ module box_cjmcu811_back() {
     }
 }
 
-module box_cjmcu811_front(depth=5, border=1, box_security=0.1) {
+module box_cjmcu811_front(depth=5, border=1, box_security=0.15) {
     cjmcu811_front(height=cjmcu_height+box_security, width=cjmcu_width+box_security, security=cjmcu_security, back=cjmcu_back, border=cjmcu_border, box_border=border);
     translate([0,cjmcu_back+cjmcu_stopper+cjmcu_board-cjmcu_border,0]) grille(cjmcu_width+2*cjmcu_security+2*cjmcu_border+box_security, depth, cjmcu_height+2*cjmcu_security+2*cjmcu_border+box_security, border);
 }
@@ -106,11 +106,12 @@ module box_cjmcu811_front(depth=5, border=1, box_security=0.1) {
 
 //#######################################################
 
-module bme280_back(height=14, width=20, security=0.2, connector=3.5, back=4, border=2, board=1.6, hole=3, hole_distance=1,hole_distance_bottom=1.3) {
+module bme280_back(height=14, width=20, security=0.2, connector=3.5, back=4, border=2, board=1.6, hole=3, hole_distance=1,hole_distance_bottom=1.4) {
     difference() {
         cube([width+2*security+2*border, back+board, height+2*security+2*border]);
         translate([border, back, border]) cube([width+2*security, board, height+2*security]);
         translate([border, 0, height+border-connector]) cube([width+2*security, back, connector+2*security]);
+        #translate([border,back-4,border])cube([width-hole_distance-hole-security,4,7]);
     }
     //translate([border+security+hole_distance+hole/2, back, border+security+hole_distance+hole/2]) rotate([-90,0,0]) cylinder(d=hole-2*security, h=3*board, $fn=64);
     translate([border+security+width-hole_distance-hole/2, back, border+security+hole_distance_bottom+hole/2]) rotate([-90,0,0]) cylinder(d=hole-2*security, h=3*board, $fn=64);
@@ -135,6 +136,7 @@ module box_bme280_back() {
         box();
         translate([(length_device+2*length_border-(bme_width+2*bme_security+2*bme_border))/2,thickness_device,(height_device-(bme_height+2*bme_security+2*bme_border))/2]) {
             bme280_connector(height=bme_height, width=bme_width, security=bme_security, back=bme_back, border=bme_border, depth=thickness_device);
+            
         //bme280_front();
         }
     }
@@ -144,14 +146,14 @@ module box_bme280_back() {
     }
 }
 
-module box_bme280_front(depth=5, border=1, box_security=0.1) {
+module box_bme280_front(depth=5, border=1, box_security=0.15) {
     bme280_front(height=bme_height+box_security, width=bme_width+box_security, security=bme_security, back=bme_back, border=bme_border, box_border=border);
     translate([0,bme_back+bme_stopper+bme_board-bme_border,0]) grille(bme_width+2*bme_security+2*bme_border+box_security, depth, bme_height+2*bme_security+2*bme_border+box_security, border);
 }
 
 //#######################################################
 
-module led(security=0.2, height=8.5, diameter=5, base=5.5, base_height=1,fake_base=10) {
+module led(security=0.3, height=8.5, diameter=5, base=5.6, base_height=1,fake_base=10) {
     if (fake_base>0) translate([0,0,-fake_base]) cylinder(d=base+security, h=fake_base,$fn=64);
     cylinder(d=base+security, h=security+base_height,$fn=64);
     translate([0,0,base_height]) cylinder(d=diameter+security, h=height-diameter/2-base_height,$fn=64);
@@ -159,10 +161,10 @@ module led(security=0.2, height=8.5, diameter=5, base=5.5, base_height=1,fake_ba
     
 }
 
-module light(diameter=10, base=5, base_height=1, thickness=thickness_device, inside=3) {
+module light(diameter=10, base=5, base_height=1, thickness=thickness_device, inside=3, border=2) {
     difference() {
         union() {
-            translate([0,0,thickness+base_height-inside]) led(security=0, height=8.5+border, diameter=5+border, base=5+border,fake_base=0);
+            translate([0,0,thickness+base_height-inside]) led(security=0, height=8.5+border, diameter=5+2*border, base=5.6+border,fake_base=0);
             cylinder(d=diameter, h=thickness,$fn=64);
             translate([0,0,thickness])cylinder(d=diameter+2*base, h=base_height,$fn=64);
         }
@@ -173,10 +175,59 @@ module light(diameter=10, base=5, base_height=1, thickness=thickness_device, ins
 
 //#######################################################
 
+
+module screw(hole=3.1, diameter=6.5, screw_height=3.2, height=5, width=8) {
+    difference() {
+        translate([-width/2, -width/2, 0]) cube([width, width,height]);
+        translate([0, 0, (height-screw_height)/2])cylinder(d=diameter, h=height, $fn=6);
+        cylinder(d=hole,h=height,$fn=32);
+    }
+}
+
+
+// ##############################
+
+module support_board(hole=3.1, diam=5, height=5, width=10, base=5) {
+    translate([0,0,base]) {
+        difference() {
+            cylinder(d=diam, h=height, $fn=32);
+            cylinder(d=hole, h=height, $fn=32);   
+        }
+    }
+    translate([0,0,base]) rotate([180,0,0]) screw(width=width, height=base);
+}
+
+module support_iC880A(diam=5,height=5, width=10, base=5) {
+    translate([(width/2)-6.15,(width/2)-2.9,0]) {
+        translate([6.15,2.9,0]) rotate([0,0,180])support_board(diam=diam, width=width,height=height, base=base);
+        translate([61.15,2.9,0]) rotate([0,0,180])support_board(diam=diam, width=width,height=height, base=base);
+        translate([6.15,76.9,0]) rotate([0,0,0]) support_board(diam=diam, width=width,height=height, base=base);
+        translate([61.15,76.9,0]) rotate([0,0,0]) support_board(diam=diam, width=width,height=height, base=base);
+    }
+}
+//border=thickness_border,outside_border=5
+module box_iC880A(diam=5,height=5, width=10, thickness=thickness_device, border=thickness_border,outside_border=5) {
+    translate([0,0,-border]) support_iC880A(diam=diam, width=width,height=height, base=thickness_device+2*border);
+    translate([-border-outside_border,0,-border]) {
+        difference() {
+            cube([(61.15-6.15)+width+2*border+2*outside_border,(76.9-2.9)+width+border+outside_border , thickness+2*border]);
+            translate([border+outside_border,0,0]) cube([(61.15-6.15)+width,(76.9-2.9)+width , thickness+2*border]);
+            translate([0,(76.9-2.9)+width+border,border]) cube([(61.15-6.15)+width+2*border+2*outside_border,outside_border , thickness]);
+            translate([0,0,border]) cube([outside_border,(76.9-2.9)+width+border+outside_border , thickness]);
+            #translate([(61.15-6.15)+width+2*border+outside_border,0,border]) cube([outside_border,(76.9-2.9)+width+border+outside_border , thickness]);
+            
+        }
+    }
+}
+
+// #############################
+
 box_cjmcu811_back();
 box_cjmcu811_front();
-!box_bme280_back();
+box_bme280_back();
 box_bme280_front();
 
 led();
 light();
+!box_iC880A();
+screw();
