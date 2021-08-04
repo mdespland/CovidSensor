@@ -57,6 +57,10 @@ async function createAirQualityObserved(id, refDevice) {
     var entity = {
         "id": id,
         "type": "AirQualityObserved",
+        "name": {
+            "type": "Property",
+            "value": id
+        },
         "dateObserved": {
             "type": "Property",
             "value": now
