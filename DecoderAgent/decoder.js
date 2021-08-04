@@ -77,7 +77,7 @@ async function sendDeviceConfiguration(refDevice) {
                 }
                 var deveui=refDevice.substring(Config.BaseDeviceUrn.length);
                 try {
-                    console.log("Push payload for device "+ id)
+                    console.log("Push payload for device "+ refDevice)
                     var client= await MQTT.connectAsync(Config.MqttURL)
                     await client.publish("application/"+Config.ApplicationId+"/device/"+deveui+"/command/down", JSON.stringify(payload))
                     await client.end();
