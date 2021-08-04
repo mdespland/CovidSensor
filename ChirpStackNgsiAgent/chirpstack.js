@@ -71,7 +71,7 @@ async function receiveDeviceNotification(notification) {
     return true;
 }
 
-
+//maxLevel,initLevel
 function encodeEntity(notification) {
     var device = {
         "id": "urn:ngsi-ld:Device:chirpstack:" + decodeBase64(notification.devEUI),
@@ -122,6 +122,14 @@ function encodeEntity(notification) {
         "deviceState": {
             "type": "Property",
             "value": "ok"
+        },
+        "co2": {
+            "type": "Property",
+            "value": 0
+        },
+        "initLevel": {
+            "type": "Property",
+            "value": 0
         },
         "@context": [
             "https://smartdatamodels.org/context.jsonld"
