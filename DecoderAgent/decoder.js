@@ -15,7 +15,8 @@ module.exports = {
     createMainSubscription,
     checkMainSubscription,
     createDeviceSubscription,
-    checkDeviceSubscription
+    checkDeviceSubscription,
+    sendDeviceConfiguration
 }
 
 const Link = "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
@@ -31,6 +32,7 @@ const MASK_OPTIONS=         0B10000000
 
 const MASK_OPTION_BASELINE= 0B00000001
 const MASK_OPTION_STD_CO2=  0B00000010
+const MASK_OPTION_CONFIG =  0B00000100
 /*
 function decodeDeviceData(data) {
     const buff = Buffer.from(data, 'base64');
@@ -51,6 +53,44 @@ function decodeDeviceData(data) {
     }
     return [0, 0];
 }*/
+
+async function sendDeviceConfiguration(refDevice) {
+    try {
+        var response = await sendRequest("GET", "/entities/"+refDevice , "", "application/ld+json", "application/ld+json", Link)
+        if ((response.status === 200) && response.hasOwnProperty("data") && response.data.hasOwnProperty("co2") && response.data.co2.hasOwnProperty("value")
+        && response.data.hasOwnProperty("initLevel") && response.data.initLevel.hasOwnProperty("value")) {
+
+            var buff=Buffer.allocUnsafe(5);
+            buff.writeUInt8(MASK_BASELINE | MASK_THRESHOLD, 0);
+            buff.writeUInt8(Math.floor(response.data.initLevel.value/256),1)
+            buff.writeUInt8(response.data.initLevel.value % 256,2)
+            buff.writeUInt8(Math.floor(response.data.co2.value/256),3)
+            buff.writeUInt8(response.data.co2.value % 256,4)
+                var payload={
+                    "confirmed": false, 
+                    "fPort": 5,
+                    "data": buff.toString("base64")
+                }
+                var deveui=refDevice.substring(Config.BaseDeviceUrn.length);
+                try {
+                    console.log("Push payload for device "+ id)
+                    var client= await MQTT.connectAsync(Config.MqttURL)
+                    await client.publish("application/"+Config.ApplicationId+"/device/"+deveui+"/command/down", JSON.stringify(payload))
+                    await client.end();
+                } catch (error) {
+                    console.log(error)
+                }
+
+            return true
+        } else {
+            if (Config.Debug) console.log("Invalid response " + response.status + " " + JSON.stringify(response.data, null, 4))
+            return false
+        }
+    } catch (error) {
+        if (Config.Debug) console.log("sendDeviceConfiguration : " + error)
+        return false
+    }
+}
 
 async function createAirQualityObserved(id, refDevice) {
     var now = (new Date()).toISOString()
@@ -111,7 +151,7 @@ async function pushDeviceData(refDevice, data, now) {
      if (Config.Debug) console.log(JSON.stringify(list, null, 4))
     for (var i = 0; i < list.length; i++) {
         console.log(now + "\t Updating " + list[i].id + " with value " + data)
-        await updateAirQualityObserved(list[i].id, data, now)
+        await updateAirQualityObserved(list[i].id, data, now, refDevice)
     }
 }
 
@@ -149,7 +189,7 @@ function formatAttribute(value, unit, now) {
     }
 }
 
-async function updateAirQualityObserved(id, data, now) {
+async function updateAirQualityObserved(id, data, now, refDevice) {
     if (Config.Debug) console.log("updateAirQualityObserved with data: "+data)
     const buff = Buffer.from(data, 'base64');
     var update = {
@@ -274,6 +314,9 @@ async function updateAirQualityObserved(id, data, now) {
                             created=true;
                         }
                         indice += 2;
+                    }
+                    if ((buff.readUInt8(option) & MASK_OPTION_CONFIG)  === MASK_OPTION_CONFIG ) {
+                        await sendDeviceConfiguration(refDevice);
                     }
                 }
             }

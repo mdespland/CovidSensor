@@ -27,4 +27,7 @@ module.exports = {
     Devices: decodeDevices(),
     MainSubscriptionId: "urn:ngsi-ld:Subscription:CovidSensor:AirQualityObserved",
     SubscriptionHost: process.env.SUBSCRIPTION_HOST || "decoderagent",
+    MqttURL: process.env.MQTT_URL || "mqtt://mosquitto:1883",
+    ApplicationId: 2,
+    BaseDeviceUrn: "urn:ngsi-ld:Device:chirpstack:"
 }
