@@ -5,7 +5,10 @@
       <span v-if="!isEdited">{{ device.name }}</span>
       <input v-if="isEdited" v-model="me.name" />
     </div>
-    <div class="devicesListCell devicesListNumberCell">{{ device.co2 }}</div>
+    <div class="devicesListCell devicesListNumberCell">
+      <span v-if="!isEdited">{{ device.co2 }}</span>
+      <input v-if="isEdited" v-model="me.co2" />
+    </div>
     <div class="devicesListCell devicesListNumberCell">
       <span v-if="!isEdited">{{ device.initLevel }}</span>
       <input v-if="isEdited" v-model="me.initLevel" />
@@ -79,7 +82,7 @@ export default {
             "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
           ],
         };
-        await ORIONLD.patch("entities/" + this.device.device + "/attrs", body);
+        await ORIONLD.patch("entities/" + this.device.id + "/attrs", body);
       } catch (error) {
         console.log(error);
       }
@@ -98,7 +101,12 @@ export default {
             "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
           ],
         };
-        await ORIONLD.patch("entities/" + this.device.id + "/attrs", bodyDevice);
+        console.log("Body Device : " + JSON.stringify(bodyDevice, null, 4))
+        var response=await ORIONLD.patch(
+          "entities/" + this.device.device + "/attrs",
+          bodyDevice
+        );
+        console.log("Response device update : " + response.status);
       } catch (error) {
         console.log(error);
       }

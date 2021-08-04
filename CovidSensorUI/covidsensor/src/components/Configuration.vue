@@ -109,6 +109,7 @@ export default {
       try {
         var response = await ORIONLD.get("entities/" + deviceid);
         if (Object.prototype.hasOwnProperty.call(response, "data")) {
+          //console.log(JSON.stringify(response.data, null, 4));
           device = response.data;
         }
       } catch (error) {
@@ -148,6 +149,7 @@ export default {
               var device = await this.loadDevice(elt.device);
               if (Object.prototype.hasOwnProperty.call(device, "co2")) {
                 elt.co2 = device.co2.value;
+                console.log("Read CO2 from device : "+elt.co2)
               }
               if (Object.prototype.hasOwnProperty.call(device, "initLevel")) {
                 elt.initLevel = device.initLevel.value;
