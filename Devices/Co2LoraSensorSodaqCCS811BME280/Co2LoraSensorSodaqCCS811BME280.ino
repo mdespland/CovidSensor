@@ -24,6 +24,8 @@
 #define CCS811_ADDR 0x5A //Alternate I2C Address
 #define BME280_ADDR 0x76
 
+#define LED_RED           13
+#define LED_GREEN         12
 #define MASK_CO2          B00000001
 #define MASK_TVOC         B00000010
 #define MASK_VOLTAGE      B00000100
@@ -35,10 +37,14 @@
 
 #define MASK_OPTION_BASELINE B00000001
 #define MASK_OPTION_STD_CO2  B00000010
+#define MASK_OPTION_CONFIG   B00000100
+
+#define MASK_BASELINE     B00000001
+#define MASK_THRESHOLD    B00000010
 
 #define MAX_MESSAGE_SIZE (1+2*7+1+2*2)
 
-uint8_t provide=MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE;
+uint8_t provide = MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE;
 
 #define         READ_SAMPLE_INTERVAL         50    //define how many samples you are going to take in normal operation
 #define         READ_SAMPLE_TIMES            32     //define the time interval(in milisecond) between each samples in normal operation
@@ -58,6 +64,9 @@ BME280 bme280;
 
 bool first = true;
 
+uint16_t threshold = 800;
+uint16_t baseline = 0;
+
 bool joinNetwork()
 {
   OrangeForRN2483.setDataRate(DATA_RATE_1); // Set DataRate to SF11/125Khz
@@ -70,6 +79,7 @@ void setup() {
   while ((!debugSerial) && (millis() < 10000)) ;
 
   OrangeForRN2483.init();
+  OrangeForRN2483.enableAdr(false);
   debugSerial.println("Initialization of the CCS811");
   Wire.begin();
   while (!ccs811.begin()) {
@@ -82,6 +92,11 @@ void setup() {
     debugSerial.println("Failed to start BME280 ! Please check your wiring.");
     delay(2000);
   }
+  if (baseline != 0) {
+    ccs811.setBaseline(baseline);
+  }
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
 }
 
 void adjustEnvironmentalData(float * humidity, float * temperature, float * pressure, float * altitude)
@@ -99,8 +114,8 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   *temperature = NULL_SAMPLE_VALUE;
   *pressure = NULL_SAMPLE_VALUE;
   *altitude = NULL_SAMPLE_VALUE;
-  int retry=0;
-  while ((((*humidity) == NULL_SAMPLE_VALUE) || ((*temperature) == NULL_SAMPLE_VALUE) || ((*pressure) == NULL_SAMPLE_VALUE) || ((*altitude) == NULL_SAMPLE_VALUE))  && (retry<MAX_READ_SAMPLE_RETRY)) {
+  int retry = 0;
+  while ((((*humidity) == NULL_SAMPLE_VALUE) || ((*temperature) == NULL_SAMPLE_VALUE) || ((*pressure) == NULL_SAMPLE_VALUE) || ((*altitude) == NULL_SAMPLE_VALUE))  && (retry < MAX_READ_SAMPLE_RETRY)) {
     humidities->init();
     temperatures->init();
     pressures->init();
@@ -112,14 +127,14 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
       altitudes->add(bme280.readFloatAltitudeMeters());
       delay(READ_SAMPLE_INTERVAL);
     }
-    float median=humidities->value(MAX_SAMPLE_DISTANCE);
-    *humidity = median==NULL_SAMPLE_VALUE ? *humidity : median;
-    median=temperatures->value(MAX_SAMPLE_DISTANCE);
-    *temperature = median==NULL_SAMPLE_VALUE ? *temperature : median;
-    median=pressures->value(MAX_SAMPLE_DISTANCE);
-    *pressure = median==NULL_SAMPLE_VALUE ? *pressure : median;
-    median=altitudes->value(5);
-    *altitude = median==NULL_SAMPLE_VALUE ? *altitude : median;
+    float median = humidities->value(MAX_SAMPLE_DISTANCE);
+    *humidity = median == NULL_SAMPLE_VALUE ? *humidity : median;
+    median = temperatures->value(MAX_SAMPLE_DISTANCE);
+    *temperature = median == NULL_SAMPLE_VALUE ? *temperature : median;
+    median = pressures->value(MAX_SAMPLE_DISTANCE);
+    *pressure = median == NULL_SAMPLE_VALUE ? *pressure : median;
+    median = altitudes->value(5);
+    *altitude = median == NULL_SAMPLE_VALUE ? *altitude : median;
     debugSerial.println("Reading Environmental Sample iteration");
     retry++;
   }
@@ -128,8 +143,10 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   delete temperatures;
   delete pressures;
   delete altitudes;
-  if ((*humidity!=NULL_SAMPLE_VALUE) && (*temperature!=NULL_SAMPLE_VALUE)) {
+  if ((*humidity != NULL_SAMPLE_VALUE) && (*temperature != NULL_SAMPLE_VALUE)) {
+    debugSerial.print("Baseline before setEnvironmentalData : ");debugSerial.println(ccs811.getBaseline());
     ccs811.setEnvironmentalData(*humidity, *temperature);
+    debugSerial.print("Baseline after setEnvironmentalData : ");debugSerial.println(ccs811.getBaseline());
   }
 }
 
@@ -146,8 +163,8 @@ void readSampledData(float * eco2, float * tvoc, float * humidity, float * tempe
   debugSerial.println("Reading Sample CO2/tVOC");
   *eco2 = NULL_SAMPLE_VALUE;
   *tvoc = NULL_SAMPLE_VALUE;
-  int retry=0;
-  while (((*eco2 == NULL_SAMPLE_VALUE) || (*tvoc == NULL_SAMPLE_VALUE)) && (retry<MAX_READ_SAMPLE_RETRY)) {
+  int retry = 0;
+  while (((*eco2 == NULL_SAMPLE_VALUE) || (*tvoc == NULL_SAMPLE_VALUE)) && (retry < MAX_READ_SAMPLE_RETRY)) {
     adjustEnvironmentalData(humidity, temperature, pressure, altitude);
     eco2s->init();
     tvocs->init();
@@ -163,11 +180,11 @@ void readSampledData(float * eco2, float * tvoc, float * humidity, float * tempe
       delay(READ_SAMPLE_INTERVAL);
     }
     debugSerial.print("eCo2 : ");
-    float median=eco2s->value(MAX_SAMPLE_DISTANCE);
-    *eco2 = median==NULL_SAMPLE_VALUE ? *eco2 : median;
+    float median = eco2s->value(MAX_SAMPLE_DISTANCE);
+    *eco2 = median == NULL_SAMPLE_VALUE ? *eco2 : median;
     debugSerial.print("tVoc : ");
-    median=tvocs->value(25);
-    *tvoc = median==NULL_SAMPLE_VALUE ? *tvoc : median;
+    median = tvocs->value(25);
+    *tvoc = median == NULL_SAMPLE_VALUE ? *tvoc : median;
     debugSerial.println("Reading Sample iteration");
     retry++;
   }
@@ -188,7 +205,7 @@ bool SendLoRaMessage()
   float pressure;
   float altitude;
 
-  readSampledData(&eco2, &tvoc,&humidity, &temperature, &pressure, &altitude);
+  readSampledData(&eco2, &tvoc, &humidity, &temperature, &pressure, &altitude);
   debugSerial.print(" Humidity: ");
   debugSerial.print(humidity, 0);
   debugSerial.print(" Pressure: ");
@@ -203,54 +220,70 @@ bool SendLoRaMessage()
   debugSerial.print(eco2);
   debugSerial.print("TVOC : ");
   debugSerial.println(tvoc);
-  data[0]=0;
-  size=1;//MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE
-  if (eco2!=NULL_SAMPLE_VALUE) {
-    data[0]|=MASK_CO2;
-    data[size]=(uint8_t)(((uint16_t) eco2) >> 8);
-    data[size+1] = (uint8_t)(eco2);
-    size+=2;
+  data[0] = 0;
+  size = 1; //MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE
+  if (eco2 != NULL_SAMPLE_VALUE) {
+    data[0] |= MASK_CO2;
+    data[size] = (uint8_t)(((uint16_t) eco2) >> 8);
+    data[size + 1] = (uint8_t)(eco2);
+    size += 2;
+    if (threshold > 0) {
+      if (eco2 > threshold) {
+        //turn on led red, off green
+        digitalWrite(LED_RED, HIGH);
+        digitalWrite(LED_GREEN, LOW);
+      } else {
+        //turn off led red, on green
+        digitalWrite(LED_RED, LOW);
+        digitalWrite(LED_GREEN, HIGH);
+      }
+    }
   }
-  if (tvoc!=NULL_SAMPLE_VALUE) {
-    data[0]|=MASK_TVOC;
-    data[size]=(uint8_t)(((uint16_t) tvoc) >> 8);
-    data[size+1] = (uint8_t)(tvoc);
-    size+=2;
+  if (tvoc != NULL_SAMPLE_VALUE) {
+    data[0] |= MASK_TVOC;
+    data[size] = (uint8_t)(((uint16_t) tvoc) >> 8);
+    data[size + 1] = (uint8_t)(tvoc);
+    size += 2;
   }
-  if (temperature!=NULL_SAMPLE_VALUE) {
-    data[0]|=MASK_TEMPERATURE;
-    data[size]=(uint8_t)(((uint16_t) temperature) >> 8);
-    data[size+1] = (uint8_t)(temperature);
-    size+=2;
+  if (temperature != NULL_SAMPLE_VALUE) {
+    data[0] |= MASK_TEMPERATURE;
+    data[size] = (uint8_t)(((uint16_t) temperature) >> 8);
+    data[size + 1] = (uint8_t)(temperature);
+    size += 2;
   }
-  if (humidity!=NULL_SAMPLE_VALUE) {
-    data[0]|=MASK_HUMIDITY;
-    data[size]=(uint8_t)(((uint16_t) humidity) >> 8);
-    data[size+1] = (uint8_t)(humidity);
-    size+=2;
+  if (humidity != NULL_SAMPLE_VALUE) {
+    data[0] |= MASK_HUMIDITY;
+    data[size] = (uint8_t)(((uint16_t) humidity) >> 8);
+    data[size + 1] = (uint8_t)(humidity);
+    size += 2;
   }
-  if (pressure!=NULL_SAMPLE_VALUE) {
-    data[0]|=MASK_PRESSURE;
-    data[size]=(uint8_t)(((uint16_t) (pressure/100)) >> 8);
-    data[size+1] = (uint8_t)(pressure/100);
-    size+=2;
+  if (pressure != NULL_SAMPLE_VALUE) {
+    data[0] |= MASK_PRESSURE;
+    data[size] = (uint8_t)(((uint16_t) (pressure / 100)) >> 8);
+    data[size + 1] = (uint8_t)(pressure / 100);
+    size += 2;
   }
-  if (altitude!=NULL_SAMPLE_VALUE) {
-    data[0]|=MASK_ALTITUDE;
-    data[size]=(uint8_t)(((uint16_t) altitude) >> 8);
-    data[size+1] = (uint8_t)(altitude);
-    size+=2;
+  if (altitude != NULL_SAMPLE_VALUE) {
+    data[0] |= MASK_ALTITUDE;
+    data[size] = (uint8_t)(((uint16_t) altitude) >> 8);
+    data[size + 1] = (uint8_t)(altitude);
+    size += 2;
   }
-  data[0]|=MASK_OPTIONS;
-  int option=size;
-  size+=1;
-  data[option]=MASK_OPTION_BASELINE;
-  uint16_t baseline=ccs811.getBaseline();
+  data[0] |= MASK_OPTIONS;
+  int option = size;
+  size += 1;
+  data[option] = MASK_OPTION_BASELINE;
+  uint16_t baseline = ccs811.getBaseline();
   debugSerial.print("Baseline : ");
   debugSerial.println(baseline);
-  data[size]=(uint8_t)(baseline >> 8);
-  data[size+1] = (uint8_t)(baseline);
-  size+=2;
+  data[size] = (uint8_t)(baseline >> 8);
+  data[size + 1] = (uint8_t)(baseline);
+  size += 2;
+  if (first) {
+    first=false;
+    debugSerial.println("Request For Configuration");
+    data[option] |= MASK_OPTION_CONFIG;
+  }
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
@@ -269,10 +302,35 @@ void loop() {
     bool sent = SendLoRaMessage();
     if (sent) {
       debugSerial.println("Message sent");
+      //we can try to receive the response
+      DownlinkMessage* downlinkMessage = OrangeForRN2483.getDownlinkMessage();
+      debugSerial.print("Port :"); debugSerial.println(downlinkMessage->getPort());
+      int8_t length = 0;
+      uint8_t* response = (uint8_t*)downlinkMessage->getMessageByteArray(&length);
+      debugSerial.print("Response length :"); debugSerial.println(length);
+      if (length > 0) {
+        uint8_t indice = 1;
+        if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
+          baseline = response[indice] * 256 + response[indice + 1];
+          debugSerial.print("Receive BaseLine :");debugSerial.println(baseline);
+          if (baseline != 0) {
+            debugSerial.print("Reconfigure BaseLine :");debugSerial.println(baseline);
+            CCS811::CCS811_Status_e status=ccs811.setBaseline(baseline);
+            if (status!=CCS811::CCS811_Stat_SUCCESS) {
+              debugSerial.print("!!! Failed to reconfigure BaseLine : ");debugSerial.println(status);
+            }
+          }
+          indice += 2;
+        }
+        if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+          threshold = response[indice] * 256 + response[indice + 1];
+          debugSerial.print("Reconfigure Threshold :");debugSerial.println(threshold);
+          indice += 2;
+        }
+      }
     } else  {
-      debugSerial.println("FAiled to send message");
+      debugSerial.println("Failed to send message");
     }
-
 
     unsigned long spent = (millis() - start);
     if (spent < WAIT_BETWEEN_MESSAGE) {

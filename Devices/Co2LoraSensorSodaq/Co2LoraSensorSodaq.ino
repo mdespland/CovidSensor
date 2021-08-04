@@ -37,7 +37,7 @@
 
 /**********************Application Related Macros**********************************/
 //These two values differ from sensor to sensor. user should derermine this value.
-#define         ZERO_POINT_VOLTAGE           (3.3156/DC_GAIN) //define the output of the sensor in volts when the concentration of CO2 is 400PPM
+float           ZERO_POINT_VOLTAGE  =  (3.3156/DC_GAIN); //define the output of the sensor in volts when the concentration of CO2 is 400PPM
 #define         REACTION_VOLTGAE             (0.030) //define the voltage drop of the sensor when move the sensor from air into 1000ppm CO2
 /*
   REF_VOLT-((log10(REF_CO2)-2.602)*(-0.075))))*8.5
@@ -48,6 +48,8 @@
 float           CO2Curve[3]  =  {2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE / (2.602 - 3))};
 
 #define debugSerial SerialUSB
+#define LED_RED           13
+#define LED_GREEN         12
 
 #define MASK_CO2          B00000001
 #define MASK_TVOC         B00000010
@@ -56,12 +58,22 @@ float           CO2Curve[3]  =  {2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE / 
 #define MASK_HUMIDITY     B00010000
 #define MASK_PRESSURE     B00100000
 #define MASK_ALTITUDE     B01000000
+#define MASK_OPTIONS      B10000000
+
+#define MASK_OPTION_BASELINE B00000001
+#define MASK_OPTION_STD_CO2  B00000010
+#define MASK_OPTION_CONFIG   B00000100
+
+#define MASK_BASELINE     B00000001
+#define MASK_THRESHOLD    B00000010
 
 // The following keys are for structure purpose only. You must define YOUR OWN.
 const uint8_t appEUI[8] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x02, 0xB1, 0x8A };
 const uint8_t appKey[16] = {  0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x66, 0x01 };
 
 bool first = true;
+uint16_t threshold = 800;
+uint16_t baseline = 0;
 
 bool joinNetwork()
 {
@@ -74,7 +86,8 @@ void setup() {
 
   while ((!debugSerial) && (millis() < 10000)) ;
   OrangeForRN2483.init();
-
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
 }
 
 int  MGGetPercentage(float volts, float *pcurve)
@@ -139,12 +152,31 @@ bool SendLoRaMessage()
     data[size] = (uint8_t)(((uint16_t) eco2) >> 8);
     data[size + 1] = (uint8_t)(eco2);
     size += 2;
+    if (threshold > 0) {
+      if (eco2 > threshold) {
+        //turn on led red, off green
+        digitalWrite(LED_RED, HIGH);
+        digitalWrite(LED_GREEN, LOW);
+      } else {
+        //turn off led red, on green
+        digitalWrite(LED_RED, LOW);
+        digitalWrite(LED_GREEN, HIGH);
+      }
+    }
   }
   if (volts != -1) {
     data[0] |= MASK_VOLTAGE;
     data[size] = (uint8_t)(((uint16_t) (volts*1000)) >> 8);
     data[size + 1] = (uint8_t)(volts*1000);
     size += 2;
+  }
+  if (first) {
+    data[0] |= MASK_OPTIONS;
+    int option = size;
+    size += 1;
+    first=false;
+    debugSerial.println("Request For Configuration");
+    data[option] |= MASK_OPTION_CONFIG;
   }
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
@@ -164,6 +196,27 @@ void loop() {
     bool sent = SendLoRaMessage();
     if (sent) {
       debugSerial.println("Message sent");
+      //we can try to receive the response
+      DownlinkMessage* downlinkMessage = OrangeForRN2483.getDownlinkMessage();
+      debugSerial.print("Port :"); debugSerial.println(downlinkMessage->getPort());
+      int8_t length = 0;
+      uint8_t* response = (uint8_t*)downlinkMessage->getMessageByteArray(&length);
+      debugSerial.print("Response length :"); debugSerial.println(length);
+      if (length > 0) {
+        uint8_t indice = 1;
+        if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
+          baseline = response[indice] * 256 + response[indice + 1];
+          debugSerial.print("Reconfigure BaseLine :");debugSerial.println(baseline);
+          if (baseline != 0) {
+            ZERO_POINT_VOLTAGE=(baseline/1000)/DC_GAIN;
+          }
+          indice += 2;
+        }
+        if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+          threshold = response[indice] * 256 + response[indice + 1];
+          indice += 2;
+        }
+      }
     } else  {
       debugSerial.println("Failed to send message");
     }
