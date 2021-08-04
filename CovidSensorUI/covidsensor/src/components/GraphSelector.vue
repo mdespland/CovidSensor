@@ -8,6 +8,7 @@
     <div class="row"><button class="selector" v-bind:class="{ selected: attribute=='elevation'}" v-on:click="send('elevation')">Altitude</button></div>
     <div class="row"><button class="selector" v-bind:class="{ selected: attribute=='voltage'}" v-on:click="send('voltage')">Voltage</button></div>
     <div class="row"><button class="selector" v-bind:class="{ selected: attribute=='baseline'}" v-on:click="send('baseline')">Baseline</button></div>
+    <div class="row"><button class="selector" v-bind:class="{ selected: attribute=='configuration'}" v-on:click="send('configuration')">Configuration</button></div>
   </div>
 </template>
 

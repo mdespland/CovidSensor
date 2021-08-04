@@ -1,13 +1,15 @@
 <template>
   <div id="main">
     <GraphSelector :attribute="attribute" @choose="chooseAttribute" id="menu"/>
-    <CO2SensorHistory :attribute="attribute" id="graph"/>
+    <CO2SensorHistory v-if="!isConfig" :attribute="attribute" id="graph"/>
+    <Configuration v-if="isConfig" id="configuration"/>
   </div>
 </template>
 
 <script>
 import GraphSelector from './components/GraphSelector.vue'
 import CO2SensorHistory from './components/CO2SensorHistory.vue'
+import Configuration from './components/Configuration.vue'
 export default {
   name: 'App',
   provide:{
@@ -39,9 +41,16 @@ export default {
       this.attribute=attribute
     }
   },
+  computed: {
+    isConfig: function () {
+      console.log("isConfig "+(this.attribute=="configuration"))
+      return this.attribute=="configuration"
+    }
+  },
   components: {
     GraphSelector,
-    CO2SensorHistory
+    CO2SensorHistory,
+    Configuration
   }
 }
 </script>
@@ -73,6 +82,11 @@ export default {
 }
 
 #graph {
+  width:85%;
+  height:100%;
+  display: table-cell;
+}
+#configuration {
   width:85%;
   height:100%;
   display: table-cell;

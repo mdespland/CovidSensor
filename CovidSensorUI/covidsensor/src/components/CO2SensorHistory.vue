@@ -69,6 +69,18 @@ export default {
     console.log("Mounted done");
   },
   methods: {
+    async deviceName(id) {
+      var name=id;
+      try {
+        var response = await ORIONLD.get("entities/"+id);
+        if ((Object.prototype.hasOwnProperty.call(response, "data")) && (Object.prototype.hasOwnProperty.call(response.data, "name"))) {
+          name=response.data.name.value;
+        }
+      }catch (error) {
+        console.log(error)
+      }
+      return name;
+    },
     loadLabels(start) {
       var starttime = start.getTime();
       for (var i = 0; i < GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL; i++) {
@@ -105,7 +117,7 @@ export default {
           );
           if (Array.isArray(response.data)) {
             for (var i = 0; i < response.data.length; i++) {
-              var dataset = this.initDataSet(response.data[i]);
+              var dataset = await this.initDataSet(response.data[i]);
               if (
                 Object.prototype.hasOwnProperty.call(
                   response.data[i],
@@ -157,17 +169,13 @@ export default {
         console.log("\tAlready managing request  :" + now.toISOString());
       }
     },
-    initDataSet(sensor) {
+    async initDataSet(sensor) {
       var data = {
         label: "",
         borderColor: "#f87979",
         data: new Array(GRAPHICS_TIME_RANGE / GRAPHICS_TIME_INTERVAL),
       };
-      if (Object.prototype.hasOwnProperty.call(sensor, "name")) {
-        data.label = sensor.name.value;
-      } else {
-        data.label = sensor.id;
-      }
+      data.label=await this.deviceName(sensor.id);
       if (!Object.prototype.hasOwnProperty.call(this.sensors, sensor.id)) {
         this.sensors[sensor.id]=this.borderColor(this.sensors.indice);
         this.sensors.indice++;
