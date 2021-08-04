@@ -17,7 +17,7 @@ function decodeDevices() {
 }
 
 module.exports = {
-    OrionAPI: process.env.ORION_API || "http://proxyld:8080",
+    OrionAPI: process.env.ORION_API_URL || "http://proxyld:8080",
     OrionService: process.env.ORION_SERVICE || "",
     OrionServicePath: process.env.ORION_SERVICE_PATH || "",
     AgentListenPort: process.env.AGENT_LISTEN_PORT || 8080,

@@ -21,6 +21,6 @@ EXPOSE 8080
 WORKDIR /app
 COPY . /app/
 RUN npm install
-ENV ORION_API_URL=http://orion:1026/ngsi-ld/v1
-ENV MQTT_BASE=http://orion:1026/ngsi-ld/v1
+ENV ORION_API_URL=http://proxyld:8080
+ENV MQTT_URL=mqtt://mosquitto:1883
 ENTRYPOINT ["npm", "start"]
