@@ -33,6 +33,10 @@ const MASK_OPTIONS=         0B10000000
 const MASK_OPTION_BASELINE= 0B00000001
 const MASK_OPTION_STD_CO2=  0B00000010
 const MASK_OPTION_CONFIG =  0B00000100
+
+const MASK_BASELINE     =   0B00000001
+const MASK_THRESHOLD    =   0B00000010
+
 /*
 function decodeDeviceData(data) {
     const buff = Buffer.from(data, 'base64');
