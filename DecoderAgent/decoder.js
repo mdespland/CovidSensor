@@ -316,6 +316,7 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
                         indice += 2;
                     }
                     if ((buff.readUInt8(option) & MASK_OPTION_CONFIG)  === MASK_OPTION_CONFIG ) {
+                        if (Config.Debug) console.log("Device " + refDevice +" have request is configuration")
                         await sendDeviceConfiguration(refDevice);
                     }
                 }
