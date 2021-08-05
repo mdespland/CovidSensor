@@ -206,7 +206,7 @@ module support_iC880A(diam=5,height=5, width=10, base=5) {
     }
 }
 //border=thickness_border,outside_border=5
-module box_iC880A(diam=5,height=5, width=10, thickness=thickness_device, border=thickness_border,outside_border=5) {
+module box_iC880A(diam=5,height=5.2, width=10, thickness=thickness_device, border=thickness_border,outside_border=5) {
     translate([0,0,-border]) support_iC880A(diam=diam, width=width,height=height, base=thickness_device+2*border);
     translate([-border-outside_border,0,-border]) {
         difference() {
@@ -222,12 +222,119 @@ module box_iC880A(diam=5,height=5, width=10, thickness=thickness_device, border=
 
 // #############################
 
+// CO2 Sensor 1.2
+co2_width=32;
+co2_length=42;
+co2_fix_hole=3;
+co2_fix_diam=6;
+co2_fix_border=3.5;
+co2_sensor_diam=20;
+co2_sensor_length=8;
+co2_sensor_top_diam=13;
+co2_sensor_top_border=2;
+co2_sensor_top_height=6;
+co2_board_top=7;
+co2_sensor_height=27;
+
+module box_co2_protection(security=0.2,border=1, top=5,thickness=1,box_thickness=2.5) {
+    height=co2_sensor_height+top-((co2_board_top+thickness+box_thickness)+(box_thickness+thickness));
+    diam=co2_sensor_diam+co2_sensor_top_diam+2*co2_sensor_top_border+security;
+    difference() {
+        cylinder(d=diam+2*border, h=height+border, $fn=128);
+        cylinder(d=diam, h=height, $fn=128);
+    }
+}
+
+module segment(diam=30, height=10, angle=2, int=20) {
+    difference() {
+        cylinder(d=diam, h=height, $fn=128);
+        cylinder(d=int, h=height, $fn=128);
+    }
+        
+}
+
+module round_border(diam=10, height=1) {
+    difference() {
+        translate([-diam/2, -diam/2, 0]) cube([diam, diam, height]);
+        cylinder(d=diam, h=height, $fn=64);
+        translate([-diam/2, -diam/2, 0]) cube([diam, diam/2, height]);
+        translate([0, 0, 0]) cube([diam/2, diam/2, height]);
+    }
+}
+
+module box_co2_sensor_top(thickness=1,border=3, width=8, height=2.5) {
+    difference() {
+        union() {
+            translate([-width,-width,0]) cube([co2_width+2*border+2*width, co2_length+2*border+2*width, thickness]);
+            difference() {
+                translate([0,0,thickness]) cube([co2_width+2*border, co2_length+2*border, height]);           
+                translate([border, border, thickness]) cube([co2_width, co2_length, height]);
+            }
+            translate([border+co2_fix_border, border+co2_fix_border, thickness]) cylinder(d=co2_fix_diam, h=height, $fn=32);
+            translate([border+co2_width-co2_fix_border, border+co2_fix_border, thickness]) cylinder(d=co2_fix_diam, h=height, $fn=32);
+            translate([border+co2_fix_border, border+co2_length-co2_fix_border, thickness]) cylinder(d=co2_fix_diam, h=height, $fn=32);
+            translate([border+co2_width-co2_fix_border, border+co2_length-co2_fix_border, thickness]) cylinder(d=co2_fix_diam, h=height, $fn=32);
+        }
+        translate([border+co2_fix_border, border+co2_fix_border, 0]) cylinder(d=co2_fix_hole, h=height+thickness, $fn=32);
+        translate([border+co2_width-co2_fix_border, border+co2_fix_border, 0]) cylinder(d=co2_fix_hole, h=height+thickness, $fn=32);
+        translate([border+co2_fix_border, border+co2_length-co2_fix_border, 0]) cylinder(d=co2_fix_hole, h=height+thickness, $fn=32);
+        translate([border+co2_width-co2_fix_border, border+co2_length-co2_fix_border, 0]) cylinder(d=co2_fix_hole, h=height+thickness, $fn=32);
+        translate([border+co2_width/2, border+co2_sensor_length, 0]) cylinder(d=co2_sensor_diam, h=thickness+height, $fn=32);
+        
+        
+        translate([-width/2,-width/2,0]) rotate([0,0,90]) round_border(diam=width, height=thickness);
+        translate([co2_width+2*border+width/2,-width/2,0]) rotate([0,0,180]) round_border(diam=width, height=thickness);
+        translate([co2_width+2*border+width/2,co2_length+2*border+width/2,0]) rotate([0,0,270]) round_border(diam=width, height=thickness);
+        translate([-width/2,co2_length+2*border+width/2,0]) rotate([0,0,0]) round_border(diam=width, height=thickness);
+    }
+    difference() {
+        translate([border+co2_width/2, border+co2_sensor_length, -co2_sensor_top_height]) cylinder(d=co2_sensor_diam+co2_sensor_top_diam+2*co2_sensor_top_border, h=co2_sensor_top_height, $fn=128);
+        translate([border+co2_width/2, border+co2_sensor_length, -co2_sensor_top_height]) cylinder(d=co2_sensor_diam+co2_sensor_top_diam, h=co2_sensor_top_height, $fn=32);
+    }
+}
+
+module box_co2_sensor_bottom(thickness=1,border=3, width=8, height=2.5) {
+    picot_height=co2_board_top+thickness+height;
+    difference() {
+        union() {
+            difference() {
+                union() {
+                    translate([-width,-width,0]) cube([co2_width+2*border+2*width, co2_length+2*border+2*width, thickness]);
+                    translate([0,0,thickness]) cube([co2_width+2*border, co2_length+2*border, height]); 
+                }          
+                translate([border, border, 0]) cube([co2_width, co2_length, height+thickness]);
+            }
+            translate([border+co2_fix_border, border+co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_diam, h=co2_board_top+height+thickness, $fn=32);
+            translate([border+co2_width-co2_fix_border, border+co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_diam, h=co2_board_top+height+thickness, $fn=32);
+            translate([border+co2_fix_border, border+co2_length-co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_diam, h=co2_board_top+height+thickness, $fn=32);
+            translate([border+co2_width-co2_fix_border, border+co2_length-co2_fix_border,-co2_board_top]) cylinder(d=co2_fix_diam, h=co2_board_top+height+thickness, $fn=32);
+            translate([border,border,0]) cube([co2_fix_border,co2_fix_border,height+thickness]);
+            translate([border+co2_width-co2_fix_border,border,0]) cube([co2_fix_border,co2_fix_border,height+thickness]);
+            translate([border,border+co2_length-co2_fix_border,0]) cube([co2_fix_border,co2_fix_border,height+thickness]);
+            translate([border+co2_width-co2_fix_border,border+co2_length-co2_fix_border,0]) cube([co2_fix_border,co2_fix_border,height+thickness]);
+        }
+        translate([border+co2_fix_border, border+co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_hole, h=co2_board_top+height+thickness, $fn=32);
+        translate([border+co2_width-co2_fix_border, border+co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_hole, h=co2_board_top+height+thickness, $fn=32);
+        translate([border+co2_fix_border, border+co2_length-co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_hole, h=co2_board_top+height+thickness, $fn=32);
+        translate([border+co2_width-co2_fix_border, border+co2_length-co2_fix_border, -co2_board_top]) cylinder(d=co2_fix_hole, h=co2_board_top+height+thickness, $fn=32);
+        #translate([border+co2_width/2, border+co2_sensor_length, 0]) cylinder(d=co2_sensor_diam, h=thickness+height, $fn=32);
+        
+    }
+}
+
+
+// ############################
+
 box_cjmcu811_back();
 box_cjmcu811_front();
 box_bme280_back();
 box_bme280_front();
 
+box_co2_sensor_bottom();
+box_co2_sensor_top();
+!box_co2_protection();
+round_border();
 led();
 light();
-!box_iC880A();
+box_iC880A();
 screw();
