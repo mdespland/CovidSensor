@@ -19,7 +19,7 @@
 
 .selector {
     width: 90%;
-    height:60px;
+    height:50px;
     font-size: 14px;
     font-weight: bold;
     font-family: Arial, Helvetica, sans-serif;

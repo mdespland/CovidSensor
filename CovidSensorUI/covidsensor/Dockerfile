@@ -7,6 +7,7 @@ RUN npm i -g @vue/compiler-sfc -D
 WORKDIR /app
 COPY ./package.json /app/
 RUN npm install
+RUN npm audit fix
 COPY ./public/ /app/public/
 COPY ./babel.config.js /app/
 COPY ./.env.development /app/
