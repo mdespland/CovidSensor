@@ -237,6 +237,9 @@ bool SendLoRaMessage()
         digitalWrite(LED_RED, LOW);
         digitalWrite(LED_GREEN, HIGH);
       }
+    } else {
+      digitalWrite(LED_GREEN, LOW);
+      digitalWrite(LED_RED, LOW);
     }
   }
   if (tvoc != NULL_SAMPLE_VALUE) {
