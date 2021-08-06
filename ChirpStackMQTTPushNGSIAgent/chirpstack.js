@@ -54,7 +54,7 @@ function checkRelation(entity, relation, context) {
     } else {
         if (entity.hasOwnProperty(context+relation)) {
             if (entity[context+relation].hasOwnProperty("object")) {
-                value=entity[context+relation].value;
+                value=entity[context+relation].object;
             } else {
                 throw new Error("Relation "+context+relation+ " has no object")
             }
