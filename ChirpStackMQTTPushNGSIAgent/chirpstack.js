@@ -3,18 +3,85 @@
 const Config = require('./config');
 const axios = require('axios');
 const MQTT = require("async-mqtt");
+const { entityExists } = require('./orion-ld');
 
 module.exports = {
     createMainSubscription,
     checkMainSubscription,
     init,
-    updateDevice
+    updateDevice,
+    checkProperty,
+    checkRelation,
+    checkType
 }
 const MASK_BASELINE     = 0B00000001
 const MASK_THRESHOLD    = 0B00000010
 
 var devices={}
 const Link = "<https://smartdatamodels.org/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
+
+function checkProperty(entity, property, context) {
+    var value="";
+    if (entity.hasOwnProperty(property)) {
+        if (entity[property].hasOwnProperty("value")) {
+            value=entity[property].value;
+        } else {
+            throw new Error("Property "+property+ " has no value")
+        }
+    } else {
+        if (entity.hasOwnProperty(context+property)) {
+            if (entity[context+property].hasOwnProperty("value")) {
+                value=entity[context+property].value;
+            } else {
+                throw new Error("Property "+context+property+ " has no value")
+            }
+        } else {
+            throw new Error("Property "+context+property+ " not found")
+        }
+    }
+    return value;
+}
+
+
+function checkRelation(entity, relation, context) {
+    var value="";
+    if (entity.hasOwnProperty(relation)) {
+        if (entity[relation].hasOwnProperty("object")) {
+            value=entity[relation].object;
+        } else {
+            throw new Error("Relation "+relation+ " has no object")
+        }
+    } else {
+        if (entity.hasOwnProperty(context+relation)) {
+            if (entity[context+relation].hasOwnProperty("object")) {
+                value=entity[context+relation].value;
+            } else {
+                throw new Error("Relation "+context+relation+ " has no object")
+            }
+        } else {
+            throw new Error("Relation "+context+relation+ " not found")
+        }
+    }
+    return value;
+}
+
+function checkType(entity, type, context) {
+    var value=false;
+    if (entity.hasOwnProperty("type")) {
+        if (entity.type===type) {
+            value=true;
+        } else {
+            if (entity.type===context+type) {
+                value=true
+            } else {
+                value=false
+            }
+        }
+    } else {
+        throw new Error("Entity has no type")
+    }
+    return value;
+}
 
 async function updateDevice(id, co2, initLevel) {
     if (devices.hasOwnProperty(id)) {

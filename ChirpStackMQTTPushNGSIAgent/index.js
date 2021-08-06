@@ -43,48 +43,52 @@ app.all('/subscription/devices', async function (req, res, next) {
   if (Config.Debug) console.log(req.body.toString('binary'))
   var notification = {}
   try {
-      notification = JSON.parse(req.body)
+    notification = JSON.parse(req.body)
   } catch (error) {
-      console.log("can't parse body " + req.body)
+    console.log("can't parse body " + req.body)
   }
   if (notification === {}) {
-      console.log("notification empty")
-      res.sendStatus(500)
+    console.log("notification empty")
+    res.sendStatus(500)
   } else {
-      console.log("Notification /subscription/devices "+JSON.stringify(notification))
-    
-      if (notification.hasOwnProperty("subscriptionId")) {
-          if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
-              for (var i = 0; i < notification.data.length; i++) {
-                  if (notification.data[i].hasOwnProperty("id")
-                  && notification.data[i].hasOwnProperty("refDeviceModel") && notification.data[i].refDeviceModel.hasOwnProperty("object") && (notification.data[i].refDeviceModel.object===Config.RefDeviceModel)
-                  && notification.data[i].hasOwnProperty("co2") && notification.data[i].co2.hasOwnProperty("value")
-                  && notification.data[i].hasOwnProperty("initLevel") && notification.data[i].initLevel.hasOwnProperty("value")) {
-                  await Chirpstack.updateDevice(notification.data[i].id, notification.data[i].co2.value, notification.data[i].initLevel.value)
-              } else {
-                  if (Config.Debug) console.log("Wrong format") 
-              }
+    console.log("Notification /subscription/devices " + JSON.stringify(notification))
 
+    if (notification.hasOwnProperty("subscriptionId")) {
+      if ((notification.hasOwnProperty("data")) && Array.isArray(notification.data)) {
+        for (var i = 0; i < notification.data.length; i++) {
+          if (notification.data[i].hasOwnProperty("id")) {
+            try {
+              var co2 = Chirpstack.checkProperty(notification.data[i], "co2", "https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/")
+              var initLevel = Chirpstack.checkProperty(notification.data[i], "initLevel", "https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/")
+              var refDeviceModel = Chirpstack.checkRelation(notification.data[i], "refDeviceModel", "https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/")
+              if (refDeviceModel === Config.RefDeviceModel) {
+                await Chirpstack.updateDevice(notification.data[i].id, co2, initLevel)
               }
-
+            } catch (error) {
+              console.log("Wrong format : " + error)
+            }
+          } else {
+            if (Config.Debug) console.log("Wrong format")
           }
+        }
       }
+    }
 
 
-      res.sendStatus(204)
+    res.sendStatus(204)
   }
 
 });
 
 app.all('*', function (req, res, next) {
   var response = {
-      method: req.method,
-      hostname: req.hostname,
-      url: req.url,
-      headers: req.headers,
-      body: req.body.toString('binary')
+    method: req.method,
+    hostname: req.hostname,
+    url: req.url,
+    headers: req.headers,
+    body: req.body.toString('binary')
   }
-  res.json({ok: true});
+  res.json({ ok: true });
   console.log(JSON.stringify(response, null, 4))
 });
 
