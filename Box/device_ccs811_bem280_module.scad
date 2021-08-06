@@ -176,7 +176,7 @@ module light(diameter=10, base=5, base_height=1, thickness=thickness_device, ins
 //#######################################################
 
 
-module screw(hole=3.1, diameter=6.5, screw_height=3.2, height=5, width=8) {
+module screw(hole=3.2, diameter=6.5, screw_height=3.2, height=5, width=8) {
     difference() {
         translate([-width/2, -width/2, 0]) cube([width, width,height]);
         translate([0, 0, (height-screw_height)/2])cylinder(d=diameter, h=height, $fn=6);
@@ -187,7 +187,7 @@ module screw(hole=3.1, diameter=6.5, screw_height=3.2, height=5, width=8) {
 
 // ##############################
 
-module support_board(hole=3.1, diam=5, height=5, width=10, base=5) {
+module support_board(hole=3.2, diam=5, height=5, width=10, base=5) {
     translate([0,0,base]) {
         difference() {
             cylinder(d=diam, h=height, $fn=32);
@@ -205,16 +205,33 @@ module support_iC880A(diam=5,height=5, width=10, base=5) {
         translate([61.15,76.9,0]) rotate([0,0,0]) support_board(diam=diam, width=width,height=height, base=base);
     }
 }
+
+//encoche 67x86
 //border=thickness_border,outside_border=5
 module box_iC880A(diam=5,height=5.2, width=10, thickness=thickness_device, border=thickness_border,outside_border=5) {
+    translate([0,0,-border]) support_iC880A(diam=diam, width=width,height=height, base=thickness_device+2*border);
+    translate([0,-border-outside_border,-border]) {
+        difference() {
+            cube([(61.15-6.15)+width+border+outside_border,(76.9-2.9)+width+2*border+2*outside_border , thickness+2*border]);
+            #translate([0,border+outside_border,0]) cube([(61.15-6.15)+width,(76.9-2.9)+width , thickness+2*border]);
+            translate([0,(76.9-2.9)+width+2*border+outside_border,border]) cube([(61.15-6.15)+width+border+outside_border,outside_border , thickness]);
+            translate([(61.15-6.15)+width+border,0,border]) cube([outside_border,(76.9-2.9)+width+2*border+2*outside_border , thickness]);
+            translate([0,0,border]) cube([(61.15-6.15)+width+border+outside_border,outside_border , thickness]);
+            
+        }
+    }
+}
+
+
+module box_iC880A_old(diam=5,height=5.2, width=10, thickness=thickness_device, border=thickness_border,outside_border=5) {
     translate([0,0,-border]) support_iC880A(diam=diam, width=width,height=height, base=thickness_device+2*border);
     translate([-border-outside_border,0,-border]) {
         difference() {
             cube([(61.15-6.15)+width+2*border+2*outside_border,(76.9-2.9)+width+border+outside_border , thickness+2*border]);
-            translate([border+outside_border,0,0]) cube([(61.15-6.15)+width,(76.9-2.9)+width , thickness+2*border]);
+            #translate([border+outside_border,0,0]) cube([(61.15-6.15)+width,(76.9-2.9)+width , thickness+2*border]);
             translate([0,(76.9-2.9)+width+border,border]) cube([(61.15-6.15)+width+2*border+2*outside_border,outside_border , thickness]);
             translate([0,0,border]) cube([outside_border,(76.9-2.9)+width+border+outside_border , thickness]);
-            #translate([(61.15-6.15)+width+2*border+outside_border,0,border]) cube([outside_border,(76.9-2.9)+width+border+outside_border , thickness]);
+            translate([(61.15-6.15)+width+2*border+outside_border,0,border]) cube([outside_border,(76.9-2.9)+width+border+outside_border , thickness]);
             
         }
     }
@@ -225,7 +242,7 @@ module box_iC880A(diam=5,height=5.2, width=10, thickness=thickness_device, borde
 // CO2 Sensor 1.2
 co2_width=32;
 co2_length=42;
-co2_fix_hole=3;
+co2_fix_hole=3.2;
 co2_fix_diam=6;
 co2_fix_border=3.5;
 co2_sensor_diam=20;
@@ -236,21 +253,30 @@ co2_sensor_top_height=6;
 co2_board_top=7;
 co2_sensor_height=27;
 
-module box_co2_protection(security=0.2,border=1, top=5,thickness=1,box_thickness=2.5) {
+module box_co2_protection(security=0.2,border=1, top=5,thickness=1,box_thickness=2.5, angle=10) {
     height=co2_sensor_height+top-((co2_board_top+thickness+box_thickness)+(box_thickness+thickness));
     diam=co2_sensor_diam+co2_sensor_top_diam+2*co2_sensor_top_border+security;
     difference() {
         cylinder(d=diam+2*border, h=height+border, $fn=128);
         cylinder(d=diam, h=height, $fn=128);
+        translate([0,0,co2_sensor_top_height]) for (i=[0:2*angle:360]) rotate([0,0,i]) segment(diam=diam+2*border+security, height=height-co2_sensor_top_height+border,angle=angle, int=co2_sensor_top_diam+2*border);
+        cylinder(d=co2_sensor_top_diam, h=height+border, $fn=128);
     }
 }
 
-module segment(diam=30, height=10, angle=2, int=20) {
+module segment(diam=30, height=10, angle=10, int=20) {
     difference() {
-        cylinder(d=diam, h=height, $fn=128);
-        cylinder(d=int, h=height, $fn=128);
+        cylinder(d=diam, h=height);
+        cylinder(d=int, h=height);
+        translate([-diam/2,-diam/2,0]) cube([diam/2,diam,height]);
+        #rotate([0,0,-angle]) translate([-diam/2,-diam/2,0])  {
+            difference() {
+                cube([diam,diam,height]);
+                cube([diam/2,diam,height]);
+            }
+        }
+                
     }
-        
 }
 
 module round_border(diam=10, height=1) {
@@ -332,9 +358,11 @@ box_bme280_front();
 
 box_co2_sensor_bottom();
 box_co2_sensor_top();
-!box_co2_protection();
+box_co2_protection();
+segment();
+
 round_border();
 led();
 light();
-box_iC880A();
+!box_iC880A();
 screw();
