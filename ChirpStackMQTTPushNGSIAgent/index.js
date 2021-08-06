@@ -63,12 +63,14 @@ app.all('/subscription/devices', async function (req, res, next) {
               var refDeviceModel = Chirpstack.checkRelation(notification.data[i], "refDeviceModel", "https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/")
               if (refDeviceModel === Config.RefDeviceModel) {
                 await Chirpstack.updateDevice(notification.data[i].id, co2, initLevel)
+              } else {
+                console.log("Wrong refDeviceModel : " + refDeviceModel+"<>"+Config.RefDeviceModel)
               }
             } catch (error) {
               console.log("Wrong format : " + error)
             }
           } else {
-            if (Config.Debug) console.log("Wrong format")
+            console.log("Wrong format")
           }
         }
       }
