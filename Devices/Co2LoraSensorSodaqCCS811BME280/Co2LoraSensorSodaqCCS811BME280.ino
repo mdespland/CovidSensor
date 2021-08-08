@@ -24,8 +24,9 @@
 #define CCS811_ADDR 0x5A //Alternate I2C Address
 #define BME280_ADDR 0x76
 
-#define LED_RED           13
-#define LED_GREEN         12
+#define LED_WARNING_RED           13
+#define LED_WARNING_GREEN         12
+
 #define MASK_CO2          B00000001
 #define MASK_TVOC         B00000010
 #define MASK_VOLTAGE      B00000100
@@ -35,9 +36,10 @@
 #define MASK_ALTITUDE     B01000000
 #define MASK_OPTIONS      B10000000
 
-#define MASK_OPTION_BASELINE B00000001
-#define MASK_OPTION_STD_CO2  B00000010
-#define MASK_OPTION_CONFIG   B00000100
+#define MASK_OPTION_BASELINE    B00000001
+#define MASK_OPTION_STD_CO2     B00000010
+#define MASK_OPTION_CONFIG      B00000100
+#define MASK_OPTION_THRESHOLD   B00001000
 
 #define MASK_BASELINE     B00000001
 #define MASK_THRESHOLD    B00000010
@@ -53,6 +55,9 @@ uint8_t provide = MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK
 #define         MAX_READ_SAMPLE_RETRY           10
 #define         WAIT_BETWEEN_MESSAGE         600000
 
+#define LED_MODE_OFF   0
+#define LED_MODE_GREEN 1
+#define LED_MODE_RED   2
 
 #define debugSerial SerialUSB
 
@@ -62,7 +67,12 @@ const uint8_t appKey[16] = {  0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x
 CCS811 ccs811(CCS811_ADDR);
 BME280 bme280;
 
+
+
 bool first = true;
+bool new_threshold= true;
+
+int led=LED_MODE_OFF;
 
 uint16_t threshold = 800;
 uint16_t baseline = 0;
@@ -74,7 +84,8 @@ bool joinNetwork()
 }
 
 void setup() {
-  debugSerial.begin(57600);
+  
+  debugSerial.begin(115200);
 
   while ((!debugSerial) && (millis() < 10000)) ;
 
@@ -95,8 +106,14 @@ void setup() {
   if (baseline != 0) {
     ccs811.setBaseline(baseline);
   }
-  pinMode(LED_GREEN, OUTPUT);
+  debugSerial.println("Initialization of the LED");
+  pinMode(LED_WARNING_GREEN, OUTPUT);
+  pinMode(LED_WARNING_RED, OUTPUT);
+  digitalWrite(LED_WARNING_GREEN, LOW);
+  digitalWrite(LED_WARNING_RED, LOW);
   pinMode(LED_RED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
 }
 
 void adjustEnvironmentalData(float * humidity, float * temperature, float * pressure, float * altitude)
@@ -229,17 +246,13 @@ bool SendLoRaMessage()
     size += 2;
     if (threshold > 0) {
       if (eco2 > threshold) {
-        //turn on led red, off green
-        digitalWrite(LED_RED, HIGH);
-        digitalWrite(LED_GREEN, LOW);
+        led=LED_MODE_RED;
+
       } else {
-        //turn off led red, on green
-        digitalWrite(LED_RED, LOW);
-        digitalWrite(LED_GREEN, HIGH);
+        led=LED_MODE_GREEN;
       }
     } else {
-      digitalWrite(LED_GREEN, LOW);
-      digitalWrite(LED_RED, LOW);
+      led=LED_MODE_OFF;
     }
   }
   if (tvoc != NULL_SAMPLE_VALUE) {
@@ -291,6 +304,9 @@ bool SendLoRaMessage()
 }
 
 void loop() {
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_RED, HIGH);
+  digitalWrite(LED_BLUE, LOW);
   unsigned long start = millis();
   bool res = OrangeForRN2483.getJoinState();
   if (! res) {
@@ -306,12 +322,14 @@ void loop() {
     if (sent) {
       debugSerial.println("Message sent");
       //we can try to receive the response
+
       DownlinkMessage* downlinkMessage = OrangeForRN2483.getDownlinkMessage();
       debugSerial.print("Port :"); debugSerial.println(downlinkMessage->getPort());
       int8_t length = 0;
       uint8_t* response = (uint8_t*)downlinkMessage->getMessageByteArray(&length);
       debugSerial.print("Response length :"); debugSerial.println(length);
       if (length > 0) {
+        digitalWrite(LED_RED, LOW);
         uint8_t indice = 1;
         if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
           baseline = response[indice] * 256 + response[indice + 1];
@@ -326,15 +344,43 @@ void loop() {
           indice += 2;
         }
         if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+          digitalWrite(LED_GREEN, LOW);
           threshold = response[indice] * 256 + response[indice + 1];
           debugSerial.print("Reconfigure Threshold :");debugSerial.println(threshold);
+          digitalWrite(LED_WARNING_RED, LOW);
+          digitalWrite(LED_WARNING_GREEN, HIGH);
+          delay(200);
+          digitalWrite(LED_WARNING_GREEN, LOW);
+          delay(200);
+          digitalWrite(LED_WARNING_GREEN, HIGH);
+          delay(200);
+          digitalWrite(LED_WARNING_GREEN, LOW);
+          delay(200);
+          digitalWrite(LED_WARNING_GREEN, HIGH);
+          debugSerial.println("Led have blink");
           indice += 2;
         }
       }
     } else  {
       debugSerial.println("Failed to send message");
     }
-
+    if (led==LED_MODE_GREEN) {
+      debugSerial.println("Switch to LED GREEN");
+      digitalWrite(LED_WARNING_RED, LOW);
+      digitalWrite(LED_WARNING_GREEN, HIGH);
+      
+    } else {
+      if (led==LED_MODE_RED) {
+        debugSerial.println("Switch to LED RED");
+        digitalWrite(LED_WARNING_GREEN, LOW);
+        digitalWrite(LED_WARNING_RED, HIGH);
+      } else {
+        debugSerial.println("Switch to LED OFF");
+        digitalWrite(LED_WARNING_GREEN, LOW);
+        digitalWrite(LED_WARNING_RED, LOW);
+      }
+    }
+    digitalWrite(LED_BLUE, HIGH);
     unsigned long spent = (millis() - start);
     if (spent < WAIT_BETWEEN_MESSAGE) {
       debugSerial.print("We will wait : ");
