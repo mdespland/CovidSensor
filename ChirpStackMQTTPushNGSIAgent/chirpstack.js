@@ -106,9 +106,9 @@ async function updateDevice(id, co2, initLevel) {
 
         if (indice>1) {
             var payload={
-                "confirmed": false, 
+                "confirmed": true, 
                 "fPort": 5,
-                "data": buff.toString("base64")
+                "data": buff.toString("base64", 0, indice)
             }
             var deveui=id.substring(Config.BaseDeviceUrn.length);
             try {
