@@ -13,7 +13,7 @@
 #define MASK_ALTITUDE     B01000000
 
 /************************Hardware Related Macros************************************/
-#define       INPUT_VOLT                    (3.3)
+#define       INPUT_VOLT                    (3.3 * 2)
 #define       INPUT_RANGE                   (4095)
 /************************Hardware Related Macros************************************/
 #define         MG_PIN                       (36)     //define which analog input channel you are going to use
@@ -29,13 +29,46 @@
 
 /**********************Application Related Macros**********************************/
 //These two values differ from sensor to sensor. user should derermine this value.
-#define         ZERO_POINT_VOLTAGE           (1.825/DC_GAIN) //define the output of the sensor in volts when the concentration of CO2 is 400PPM
+float         ZERO_POINT_VOLTAGE     =      (1.825 / DC_GAIN); //define the output of the sensor in volts when the concentration of CO2 is 400PPM
 #define         REACTION_VOLTGAE             (0.030) //define the voltage drop of the sensor when move the sensor from air into 1000ppm CO2
 /*
   REF_VOLT-((log10(REF_CO2)-2.602)*(-0.075))))*8.5
   489 => 1.825
   1266 => 1.77
 */
+
+
+/***********************************************************************************/
+#define LED_RED           13
+#define LED_GREEN         12
+
+#define LED_MODE_OFF   0
+#define LED_MODE_GREEN 1
+#define LED_MODE_RED   2
+
+#define MASK_CO2          B00000001
+#define MASK_TVOC         B00000010
+#define MASK_VOLTAGE      B00000100
+#define MASK_TEMPERATURE  B00001000
+#define MASK_HUMIDITY     B00010000
+#define MASK_PRESSURE     B00100000
+#define MASK_ALTITUDE     B01000000
+#define MASK_OPTIONS      B10000000
+
+#define MASK_OPTION_BASELINE B00000001
+#define MASK_OPTION_STD_CO2  B00000010
+#define MASK_OPTION_CONFIG   B00000100
+
+#define MASK_BASELINE     B00000001
+#define MASK_THRESHOLD    B00000010
+
+bool first = true;
+bool new_threshold = true;
+int led = LED_MODE_OFF;
+
+uint16_t threshold = 800;
+uint16_t baseline = 0;
+
 /*****************************Globals***********************************************/
 float           CO2Curve[3]  =  {2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE / (2.602 - 3))};
 
@@ -60,6 +93,7 @@ uint16_t userChannelsMask[6] = { 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 
 DeviceClass_t  loraWanClass = CLASS_C;
 
 /*the application data transmission duty cycle.  value in [ms].*/
+/*uint32_t appTxDutyCycle = 120000;*/
 uint32_t appTxDutyCycle = 600000;
 
 /*OTAA or ABP*/
@@ -139,7 +173,36 @@ void readSampledData(float * co2, float * volt)
   delete raws;
 }
 
+void __attribute__((weak)) downLinkDataHandle(McpsIndication_t *mcpsIndication)
+{
+  debugSerial.println("*********************************************************");
+  lora_printf("+REV DATA:%s,RXSIZE %d,PORT %d\r\n", mcpsIndication->RxSlot ? "RXWIN2" : "RXWIN1", mcpsIndication->BufferSize, mcpsIndication->Port);
+  lora_printf("+REV DATA:");
 
+  for (uint8_t i = 0; i < mcpsIndication->BufferSize; i++)
+  {
+    lora_printf("%02X", mcpsIndication->Buffer[i]);
+  }
+  lora_printf("\r\n");
+  int8_t length = mcpsIndication->BufferSize;
+  if (length > 0) {
+    uint8_t indice = 1;
+    if (((mcpsIndication->Buffer[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
+      baseline = mcpsIndication->Buffer[indice] * 256 + mcpsIndication->Buffer[indice + 1];
+      debugSerial.print("Receive BaseLine :"); debugSerial.println(baseline);
+      if (baseline != 0) {
+        debugSerial.print("Reconfigure BaseLine :"); debugSerial.println(baseline);
+        ZERO_POINT_VOLTAGE = (baseline / 1000) / DC_GAIN;
+      }
+      indice += 2;
+    }
+    if (((mcpsIndication->Buffer[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+      threshold = mcpsIndication->Buffer[indice] * 256 + mcpsIndication->Buffer[indice + 1];
+      debugSerial.print("Reconfigure Threshold :"); debugSerial.println(threshold);
+      indice += 2;
+    }
+  }
+}
 
 static void prepareTxFrame( uint8_t port )
 {
@@ -152,7 +215,7 @@ static void prepareTxFrame( uint8_t port )
   debugSerial.print(eco2);
   debugSerial.print(" Volts : ");
   debugSerial.println(volts);
-  percentage=(uint16_t) (eco2);
+  percentage = (uint16_t) (eco2);
   appData[0] = 0;
   appDataSize = 1;
   if (eco2 != -1) {
@@ -160,6 +223,21 @@ static void prepareTxFrame( uint8_t port )
     appData[appDataSize] = (uint8_t)(((uint16_t) eco2) >> 8);
     appData[appDataSize + 1] = (uint8_t)(eco2);
     appDataSize += 2;
+    if (threshold > 0) {
+      if (eco2 > threshold) {
+        led = LED_MODE_RED;
+        digitalWrite(LED_GREEN, LOW);
+        digitalWrite(LED_RED, HIGH);
+      } else {
+        led = LED_MODE_GREEN;
+        digitalWrite(LED_RED, LOW);
+        digitalWrite(LED_GREEN, HIGH);
+      }
+    } else {
+      led = LED_MODE_OFF;
+      digitalWrite(LED_GREEN, LOW);
+      digitalWrite(LED_RED, LOW);
+    }
   }
   if (volts != -1) {
     appData[0] |= MASK_VOLTAGE;
@@ -167,6 +245,15 @@ static void prepareTxFrame( uint8_t port )
     appData[appDataSize + 1] = (uint8_t)(volts * 1000);
     appDataSize += 2;
   }
+  if (first) {
+    appData[0] |= MASK_OPTIONS;
+    int option = appDataSize;
+    appDataSize += 1;
+    first = false;
+    debugSerial.println("Request For Configuration");
+    appData[option] |= MASK_OPTION_CONFIG;
+  }
+
 }
 
 
@@ -179,12 +266,18 @@ void setup()
   if (mcuStarted == 0)
   {
     LoRaWAN.displayMcuInit();
+    Display.flipScreenVertically();
   }
   Serial.begin(115200);
   while (!Serial);
   SPI.begin(SCK, MISO, MOSI, SS);
   Mcu.init(SS, RST_LoRa, DIO0, DIO1, license);
   deviceState = DEVICE_STATE_INIT;
+  Serial.println("Initialization of the LED - 2");
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_RED, HIGH);
 }
 
 // The loop function is called in an endless loop
