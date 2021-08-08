@@ -299,9 +299,9 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
                     var elevation=buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1);
                     if (elevation>(65536/2)) elevation=elevation-65536;
                     if (entity.hasOwnProperty("elevation")) {
-                        update.elevation=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"MTR", now)
+                        update.elevation=formatAttribute(elevation,"MTR", now)
                     } else {
-                        create.elevation=formatAttribute(buff.readUInt8(indice) * 256 + buff.readUInt8(indice+1),"MTR", now)
+                        create.elevation=formatAttribute(elevation,"MTR", now)
                         created=true;
                     }
                     indice += 2;
