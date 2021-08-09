@@ -16,6 +16,7 @@ services:
     environment:
       - "ORION_API_URL=http://proxyld:8080"
       - "MQTT_URL=mqtt://mosquitto:1883"
+      - "DEVICE_LIST={\"urn:ngsi-ld:AirQualityObserved:Co2:sensor1\": \"urn:ngsi-ld:Device:chirpstack:2232330000888802\", \"urn:ngsi-ld:AirQualityObserved:Co2:sensor2\": \"urn:ngsi-ld:Device:chirpstack:0004a30b001f3423\", \"urn:ngsi-ld:AirQualityObserved:Co2:sensor3\": \"urn:ngsi-ld:Device:chirpstack:0004a30b001bbf28\", \"urn:ngsi-ld:AirQualityObserved:Co2:sensor4\": \"urn:ngsi-ld:Device:chirpstack:0004a30b001f3740\"}"
     depends_on:
       - proxyld
     restart: always
