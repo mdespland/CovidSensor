@@ -67,12 +67,12 @@ const uint8_t appKey[16] = {  0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x
 CCS811 ccs811(CCS811_ADDR);
 BME280 bme280;
 
-
+uint32_t rxdelay2 = 0;
 
 bool first = true;
-bool new_threshold= true;
+bool new_threshold = true;
 
-int led=LED_MODE_OFF;
+int led = LED_MODE_OFF;
 
 uint16_t threshold = 800;
 uint16_t baseline = 0;
@@ -84,13 +84,14 @@ bool joinNetwork()
 }
 
 void setup() {
-  
+
   debugSerial.begin(115200);
 
   while ((!debugSerial) && (millis() < 10000)) ;
 
   OrangeForRN2483.init();
   OrangeForRN2483.enableAdr(false);
+  rxdelay2 = OrangeForRN2483.getRxdelay2();
   debugSerial.println("Initialization of the CCS811");
   Wire.begin();
   while (!ccs811.begin()) {
@@ -161,9 +162,9 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
   delete pressures;
   delete altitudes;
   if ((*humidity != NULL_SAMPLE_VALUE) && (*temperature != NULL_SAMPLE_VALUE)) {
-    debugSerial.print("Baseline before setEnvironmentalData : ");debugSerial.println(ccs811.getBaseline());
+    debugSerial.print("Baseline before setEnvironmentalData : "); debugSerial.println(ccs811.getBaseline());
     ccs811.setEnvironmentalData(*humidity, *temperature);
-    debugSerial.print("Baseline after setEnvironmentalData : ");debugSerial.println(ccs811.getBaseline());
+    debugSerial.print("Baseline after setEnvironmentalData : "); debugSerial.println(ccs811.getBaseline());
   }
 }
 
@@ -246,13 +247,13 @@ bool SendLoRaMessage()
     size += 2;
     if (threshold > 0) {
       if (eco2 > threshold) {
-        led=LED_MODE_RED;
+        led = LED_MODE_RED;
 
       } else {
-        led=LED_MODE_GREEN;
+        led = LED_MODE_GREEN;
       }
     } else {
-      led=LED_MODE_OFF;
+      led = LED_MODE_OFF;
     }
   }
   if (tvoc != NULL_SAMPLE_VALUE) {
@@ -296,7 +297,7 @@ bool SendLoRaMessage()
   data[size + 1] = (uint8_t)(baseline);
   size += 2;
   if (first) {
-    first=false;
+    first = false;
     debugSerial.println("Request For Configuration");
     data[option] |= MASK_OPTION_CONFIG;
   }
@@ -310,20 +311,26 @@ void loop() {
   unsigned long start = millis();
   bool res = OrangeForRN2483.getJoinState();
   if (! res) {
-    debugSerial.println("Join Request");
+    debugSerial.println("######## JOIN REQUEST ########");
     res = joinNetwork();
+    OrangeForRN2483.enableAdr();
   }
   if (res) {
     debugSerial.println("Join Success");
-    OrangeForRN2483.enableAdr();
 
+
+    debugSerial.println("######## UPLINK MESSAGE ########");
     debugSerial.println("Send Data");
     bool sent = SendLoRaMessage();
     if (sent) {
       debugSerial.println("Message sent");
-      //we can try to receive the response
 
+      /* ##################################### */
+      //we can try to receive the response
+      /*debugSerial.print("Wait RX Delay 2 : "); debugSerial.println( (uint32_t) (rxdelay2 * 1.1));
+        delay((uint32_t) (rxdelay2 * 1.1));*/
       DownlinkMessage* downlinkMessage = OrangeForRN2483.getDownlinkMessage();
+      debugSerial.println("######## DOWNLINK MESSAGE ########");
       debugSerial.print("Port :"); debugSerial.println(downlinkMessage->getPort());
       int8_t length = 0;
       uint8_t* response = (uint8_t*)downlinkMessage->getMessageByteArray(&length);
@@ -333,12 +340,12 @@ void loop() {
         uint8_t indice = 1;
         if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
           baseline = response[indice] * 256 + response[indice + 1];
-          debugSerial.print("Receive BaseLine :");debugSerial.println(baseline);
+          debugSerial.print("Receive BaseLine :"); debugSerial.println(baseline);
           if (baseline != 0) {
-            debugSerial.print("Reconfigure BaseLine :");debugSerial.println(baseline);
-            CCS811::CCS811_Status_e status=ccs811.setBaseline(baseline);
-            if (status!=CCS811::CCS811_Stat_SUCCESS) {
-              debugSerial.print("!!! Failed to reconfigure BaseLine : ");debugSerial.println(status);
+            debugSerial.print("Reconfigure BaseLine :"); debugSerial.println(baseline);
+            CCS811::CCS811_Status_e status = ccs811.setBaseline(baseline);
+            if (status != CCS811::CCS811_Stat_SUCCESS) {
+              debugSerial.print("!!! Failed to reconfigure BaseLine : "); debugSerial.println(status);
             }
           }
           indice += 2;
@@ -346,7 +353,7 @@ void loop() {
         if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
           digitalWrite(LED_GREEN, LOW);
           threshold = response[indice] * 256 + response[indice + 1];
-          debugSerial.print("Reconfigure Threshold :");debugSerial.println(threshold);
+          debugSerial.print("Reconfigure Threshold :"); debugSerial.println(threshold);
           digitalWrite(LED_WARNING_RED, LOW);
           digitalWrite(LED_WARNING_GREEN, HIGH);
           delay(200);
@@ -361,16 +368,17 @@ void loop() {
           indice += 2;
         }
       }
+      /* #####################################*/
     } else  {
       debugSerial.println("Failed to send message");
     }
-    if (led==LED_MODE_GREEN) {
+    if (led == LED_MODE_GREEN) {
       debugSerial.println("Switch to LED GREEN");
       digitalWrite(LED_WARNING_RED, LOW);
       digitalWrite(LED_WARNING_GREEN, HIGH);
-      
+
     } else {
-      if (led==LED_MODE_RED) {
+      if (led == LED_MODE_RED) {
         debugSerial.println("Switch to LED RED");
         digitalWrite(LED_WARNING_GREEN, LOW);
         digitalWrite(LED_WARNING_RED, HIGH);
@@ -382,6 +390,7 @@ void loop() {
     }
     digitalWrite(LED_BLUE, HIGH);
     unsigned long spent = (millis() - start);
+    debugSerial.println("######## END OF LOOP ########");
     if (spent < WAIT_BETWEEN_MESSAGE) {
       debugSerial.print("We will wait : ");
       debugSerial.println(WAIT_BETWEEN_MESSAGE - spent);
