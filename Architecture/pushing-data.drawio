@@ -1,0 +1,79 @@
+<mxfile host="65bd71144e">
+    <diagram id="cBmL0u_68kjhYl28BfFv" name="Page-1">
+        <mxGraphModel dx="903" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="CO2 Sensor" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fontColor=#003333;strokeColor=#003333;fillColor=#CCFFFF;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="20" width="100" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="Chirpstack" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#99FF99;strokeColor=#006600;fontColor=#006600;" vertex="1" parent="1">
+                    <mxGeometry x="210" y="20" width="100" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="UP Agent" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFCCFF;strokeColor=#660066;fontColor=#660066;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="20" width="100" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Decoder" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFCCFF;strokeColor=#660066;fontColor=#660066;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="20" width="100" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="OrionLD" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;collapsible=0;recursiveResize=0;outlineConnect=0;strokeColor=#006666;fontColor=#006666;fillColor=#CCFFFF;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="20" width="100" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="Send Lora Payload" style="html=1;verticalAlign=bottom;endArrow=block;strokeColor=#003333;labelBackgroundColor=none;fontColor=#003333;" edge="1" parent="1" source="2" target="3">
+                    <mxGeometry width="80" relative="1" as="geometry">
+                        <mxPoint x="370" y="460" as="sourcePoint"/>
+                        <mxPoint x="450" y="460" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="120" y="100"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="8" value="HTTP push" style="html=1;verticalAlign=bottom;endArrow=block;fontColor=#333300;labelBackgroundColor=none;strokeColor=#333300;" edge="1" parent="1" source="3" target="4">
+                    <mxGeometry width="80" relative="1" as="geometry">
+                        <mxPoint x="370" y="460" as="sourcePoint"/>
+                        <mxPoint x="450" y="460" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="290" y="120"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="9" value="Update Sensor Entity with raw paylaod" style="html=1;verticalAlign=bottom;endArrow=block;labelBackgroundColor=none;fontColor=#660066;strokeColor=#660066;" edge="1" parent="1" source="4" target="6">
+                    <mxGeometry width="80" relative="1" as="geometry">
+                        <mxPoint x="370" y="460" as="sourcePoint"/>
+                        <mxPoint x="450" y="460" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="450" y="140"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="10" value="Notify Sensor change" style="html=1;verticalAlign=bottom;endArrow=block;strokeColor=#006666;fontColor=#006666;labelBackgroundColor=none;" edge="1" parent="1" source="6" target="5">
+                    <mxGeometry width="80" relative="1" as="geometry">
+                        <mxPoint x="370" y="460" as="sourcePoint"/>
+                        <mxPoint x="450" y="460" as="targetPoint"/>
+                        <Array as="points"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="15" value="Decode the Payload" style="html=1;verticalAlign=bottom;endArrow=block;labelBackgroundColor=none;fontColor=#660066;strokeColor=#660066;" edge="1" parent="1" source="5" target="5">
+                    <mxGeometry x="0.0662" y="60" width="80" relative="1" as="geometry">
+                        <mxPoint x="370" y="460" as="sourcePoint"/>
+                        <mxPoint x="640" y="300" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="640" y="200"/>
+                            <mxPoint x="640" y="250"/>
+                        </Array>
+                        <mxPoint y="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="16" value="Update AirQualityObserved" style="html=1;verticalAlign=bottom;endArrow=block;labelBackgroundColor=none;fontColor=#660066;strokeColor=#660066;" edge="1" parent="1" source="5" target="6">
+                    <mxGeometry width="80" relative="1" as="geometry">
+                        <mxPoint x="370" y="460" as="sourcePoint"/>
+                        <mxPoint x="450" y="460" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="730" y="280"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
