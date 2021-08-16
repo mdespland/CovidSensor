@@ -214,11 +214,18 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
         ]
     }
     var created=false;
+    var configuration=false;
+    var lastSeen=0;
     try {
         var entity = await getAirQualityObserved(id);
         if (buff.length === 4) {
             if (entity.hasOwnProperty("co2")) {
                 update.co2=formatAttribute(buff.readUInt8(0) * 256 + buff.readUInt8(1),"59", now)
+                try {
+                    lastSeen=Date.parse(entity.co2.observedAt);
+                } catch(error) {
+                    if (Config.Debug) console.log("\tCan't read lasSeen : "+error)
+                }
             } else {
                 create.co2=formatAttribute(buff.readUInt8(0) * 256 + buff.readUInt8(1),"59", now)
                 created=true;
@@ -322,10 +329,21 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
                     }
                     if ((buff.readUInt8(option) & MASK_OPTION_CONFIG)  === MASK_OPTION_CONFIG ) {
                         if (Config.Debug) console.log("Device " + refDevice +" have request is configuration")
-                        await sendDeviceConfiguration(refDevice);
+                        configuration=true;
+                        
                     }
                 }
             }
+        }
+        var elapsed=0;
+        try {
+            elapsed=Date.parse(now)-lastSeen;
+        } catch(error) {
+
+        }
+        if ((configuration) || (elapsed>1000*3600*4)) {
+            if (Config.Debug) console.log("Sending configuration for device  " + refDevice)
+            await sendDeviceConfiguration(refDevice);
         }
         if (created) {
             try {
