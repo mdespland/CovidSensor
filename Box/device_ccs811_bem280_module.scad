@@ -1,5 +1,6 @@
 thickness_border=1.8; //epaisseur de la languette
-thickness_device=18; //epaisseur de la boite
+thickness_device=18; 
+thickness_box=5;//epaisseur de la boite
 length_border=5;
 height_device=20;
 length_device=24.5;
@@ -42,7 +43,7 @@ module grille(length, depth, height, border) {
         translate([border,0, border]) cube([length, depth,height]);
         translate([border,border,0]) grille_holes(length-2*border, depth, height, border);
         translate([0,border,height+border]) rotate([0,90,0]) grille_holes(height-2*border, depth, length, border);
-        #translate([length+border,0,height+border]) rotate([0,90,90]) grille_holes(height-2*border, length+2*border, depth, border);
+        translate([length+border,0,height+border]) rotate([0,90,90]) grille_holes(height-2*border, length+2*border, depth, border);
     }
 }
 
@@ -55,7 +56,7 @@ module grille_holes(length, depth, height, border) {
        }
     }*/
     for (j=[0:floor(nb/2)+1]) {
-       translate([(j*2*hole),0, 0]) #cube([hole,(depth-2*border),height+2*border]);
+       translate([(j*2*hole),0, 0]) cube([hole,(depth-2*border),height+2*border]);
     }
 }
 //#######################################################
@@ -212,8 +213,8 @@ module support_iC880A(diam=5,height=5, width=10, base=5) {
 
 //encoche 67x86
 //border=thickness_border,outside_border=5
-module box_iC880A(diam=5,height=5.2, width=10, thickness=thickness_device, border=thickness_border,outside_border=5) {
-    translate([0,0,-border]) support_iC880A(diam=diam, width=width,height=height, base=thickness_device+2*border);
+module box_iC880A(diam=5,height=5.2, width=10, thickness=thickness_box+0.2, border=thickness_border,outside_border=5) {
+    translate([0,0,-border]) support_iC880A(diam=diam, width=width,height=height, base=thickness+2*border);
     translate([0,-border-outside_border,-border]) {
         difference() {
             cube([(61.15-6.15)+width+border+outside_border,(76.9-2.9)+width+2*border+2*outside_border , thickness+2*border]);
@@ -257,7 +258,7 @@ co2_sensor_top_height=6;
 co2_board_top=7;
 co2_sensor_height=27;
 
-module box_co2_protection(security=0.2,border=1, top=5,thickness=1,box_thickness=2.5, angle=10) {
+module box_co2_protection(security=0.2,border=2, top=5,thickness=1,box_thickness=2.5, angle=10) {
     height=co2_sensor_height+top-((co2_board_top+thickness+box_thickness)+(box_thickness+thickness));
     diam=co2_sensor_diam+co2_sensor_top_diam+2*co2_sensor_top_border+security;
     difference() {
@@ -362,7 +363,7 @@ heltec_proto_height=38;
 heltec_proto_depth=19.5;
 heltec_proto_hole_distance=30.5;
 
-module box_heltec_bottom(border=2, inter_board=10, left_co2=5,height=5, heltec_fix=4) {
+module box_heltec_bottom(border=2, inter_board=10, left_co2=5,height=5, heltec_fix=4, security_board=1) {
     box_length=co2_length+heltec_proto_width+inter_board+2*border+left_co2;
     box_depth=2*border+co2_width;
     
@@ -391,16 +392,16 @@ module box_heltec_bottom(border=2, inter_board=10, left_co2=5,height=5, heltec_f
     translate([box_length-heltec_proto_width-border, box_depth-(heltec_proto_depth+height+heltec_fix),height]) {
         difference() {
             union() {
-                cube([heltec_proto_width, height,(2*heltec_proto_height)/3]);
-                translate([(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2]) rotate([90,0,0]) cylinder(d=co2_fix_diam, h=heltec_fix, $fn=32);
-                translate([heltec_proto_width-(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2]) rotate([90,0,0]) cylinder(d=co2_fix_diam, h=heltec_fix, $fn=32);
-                translate([heltec_proto_width-co2_fix_diam/2,height/2,0]) cylinder(d=co2_fix_diam, h=(2*heltec_proto_height)/3, $fn=32);
+                cube([heltec_proto_width, height,(2*heltec_proto_height)/3+security_board]);
+                translate([(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2+security_board]) rotate([90,0,0]) cylinder(d=co2_fix_diam, h=heltec_fix, $fn=32);
+                translate([heltec_proto_width-(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2+security_board]) rotate([90,0,0]) cylinder(d=co2_fix_diam, h=heltec_fix, $fn=32);
+                translate([heltec_proto_width-co2_fix_diam/2,height/2,0]) cylinder(d=co2_fix_diam, h=(2*heltec_proto_height)/3+security_board, $fn=32);
             }
-            translate([(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2]) rotate([90,0,0]) cylinder(d=co2_fix_hole, h=heltec_fix, $fn=32);
-            translate([heltec_proto_width-(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2]) rotate([90,0,0]) cylinder(d=co2_fix_hole, h=heltec_fix, $fn=32);
-            translate([(heltec_proto_width-heltec_proto_hole_distance)/2,height,heltec_proto_height/2]) rotate([90,0,0]) screw_footprint(hole=co2_fix_hole,height=height);
-            translate([heltec_proto_width-(heltec_proto_width-heltec_proto_hole_distance)/2,height,heltec_proto_height/2]) rotate([90,0,0]) screw_footprint(hole=co2_fix_hole,height=height);
-            translate([heltec_proto_width-co2_fix_diam/2,height/2,0]) cylinder(d=co2_fix_hole, h=(2*heltec_proto_height)/3, $fn=32);
+            translate([(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2+security_board]) rotate([90,0,0]) cylinder(d=co2_fix_hole, h=heltec_fix, $fn=32);
+            translate([heltec_proto_width-(heltec_proto_width-heltec_proto_hole_distance)/2,height+heltec_fix,heltec_proto_height/2+security_board]) rotate([90,0,0]) cylinder(d=co2_fix_hole, h=heltec_fix, $fn=32);
+            translate([(heltec_proto_width-heltec_proto_hole_distance)/2,height,heltec_proto_height/2+security_board]) rotate([90,0,0]) screw_footprint(hole=co2_fix_hole,height=height);
+            translate([heltec_proto_width-(heltec_proto_width-heltec_proto_hole_distance)/2,height,heltec_proto_height/2+security_board]) rotate([90,0,0]) screw_footprint(hole=co2_fix_hole,height=height);
+            translate([heltec_proto_width-co2_fix_diam/2,height/2,0]) cylinder(d=co2_fix_hole, h=(2*heltec_proto_height)/3+security_board, $fn=32);
         }
             
     }
@@ -432,13 +433,19 @@ module box_heltec_bottom(border=2, inter_board=10, left_co2=5,height=5, heltec_f
     
 }
 
-module box_heltec_top(border=2, inter_board=10, left_co2=5,height=5, heltec_fix=4, security=0.2, angle=10,picot_height=10, border_grille=5) {
+module box_heltec_top(border=2, inter_board=10, left_co2=5,height=5, heltec_fix=4, security=0.2, angle=10,picot_height=10, border_grille=5, security_board=1, screen_height=14, screen_width=25, screen_right=22, usb_height=10, usb_width=8, usb_right=4, usb_border=5) {
     screw_head_diam=6;
     screw_head_height=3;
     box_length=co2_length+heltec_proto_width+inter_board+2*border+left_co2;
     box_depth=2*border+co2_width;
-    box_height=height+heltec_proto_height+border;
+    box_height=height+heltec_proto_height+border+height+security_board;
     diam=co2_width-2*border;
+    //cap_depth=box_depth-heltec_proto_depth-heltec_fix;
+    cap_depth=20;
+    cap_right=screw_head_diam+2*border;
+    cap_length=heltec_proto_width;
+    echo(cap_length);
+    echo(cap_depth);
     translate([-border-security, -border-security, 0]) {
         difference() {
             union() {
@@ -450,21 +457,63 @@ module box_heltec_top(border=2, inter_board=10, left_co2=5,height=5, heltec_fix=
                 translate([left_co2+co2_fix_border+border+security, co2_width+border+security+border-co2_fix_border, box_height+border-(screw_head_height+border)]) cylinder(d=screw_head_diam+2*border, h=screw_head_height+border, $fn=32);
                 translate([left_co2+co2_fix_border+border+security, border+security+border+co2_fix_border, height+picot_height]) cylinder(d=co2_fix_diam, h=box_height-height-picot_height, $fn=32);
                 translate([left_co2+co2_fix_border+border+security, border+security+border+co2_fix_border, box_height+border-(screw_head_height+border)]) cylinder(d=screw_head_diam+2*border, h=screw_head_height+border, $fn=32);
+                
+                //FIX coté Heltec
+                translate([box_length-co2_fix_diam/2+security,height/2+box_depth-(heltec_proto_depth+height+heltec_fix)+border+security,height+(2*heltec_proto_height)/3]) {
+                    
+                    cylinder(d=co2_fix_diam, h=heltec_proto_height/3+border+height+security_board, $fn=32);
+                    translate([0,0,heltec_proto_height/3+border-screw_head_height-border+height+security_board]) cylinder(d=screw_head_diam+2*border, h=screw_head_height+border, $fn=32);
+                }
+                // USB
+                translate([box_length+border+2*security-usb_right, box_depth+border+security-usb_border-usb_width/2-border, height+heltec_proto_height/2+security_board-usb_height/2-border]) {
+                    cube([border+usb_right, usb_width+2*border,usb_height+2*border]);
+                }
             }
+            //fixation coté CO2 Sensor
             translate([left_co2+co2_fix_border+border+security, co2_width+border+security+border-co2_fix_border, height+picot_height]) cylinder(d=co2_fix_hole, h=box_height-height-picot_height+border, $fn=32);
             translate([left_co2+co2_fix_border+border+security, co2_width+border+security+border-co2_fix_border, box_height+border-(screw_head_height)]) cylinder(d=screw_head_diam, h=screw_head_height, $fn=32);
             translate([left_co2+co2_fix_border+border+security, border+security+border+co2_fix_border, height+picot_height]) cylinder(d=co2_fix_hole, h=box_height-height-picot_height+border, $fn=32);
             translate([left_co2+co2_fix_border+border+security, border+security+border+co2_fix_border, box_height+border-(screw_head_height)]) cylinder(d=screw_head_diam, h=screw_head_height, $fn=32);
-            translate([border_grille, 0, box_height-border_grille-30]) grille();
-            translate([border_grille, box_depth+border+security, box_height-border_grille-30]) grille(depth=border+2*security);
-            translate([border, border_grille, box_height-border_grille-30]) rotate([0,0,90]) grille(width=box_depth+2*border-2*border_grille);
-            #translate([border+left_co2+co2_sensor_diam/2, (box_depth+2*border+2*security)/2, box_height]) cylinder(d=2*co2_sensor_diam/3, h=border, $fn=32);
+            // CO2 Sensor Aeration
+            translate([border_grille, 0, box_height-border_grille-30]) grille_heltec();
+            translate([border_grille, box_depth+border+security, box_height-border_grille-30]) grille_heltec(depth=border+2*security);
+            translate([border, border_grille, box_height-border_grille-30]) rotate([0,0,90]) grille_heltec(width=box_depth+2*border-2*border_grille);
+            translate([border+left_co2+co2_sensor_diam/2, (box_depth+2*border+2*security)/2, box_height+border-screw_head_height]) cylinder(d=co2_sensor_top_diam, h=screw_head_height, $fn=32);
+            // TOP
+
+            translate([box_length-cap_length-cap_right, border, box_height]) cube([cap_length, cap_depth, border]);
+            translate([box_length-co2_fix_diam/2+security,height/2+box_depth-(heltec_proto_depth+height+heltec_fix)+border+security,height+(2*heltec_proto_height)/3]) cylinder(d=co2_fix_hole, h=heltec_proto_height/3+border+height+security_board, $fn=32);
+            translate([box_length-co2_fix_diam/2+security,height/2+box_depth-(heltec_proto_depth+height+heltec_fix)+border+security,box_height+border-(screw_head_height)]) {
+                cylinder(d=screw_head_diam, h=screw_head_height, $fn=32);
+            }
+            
+            // Screen
+            #translate([box_length-screen_right-screen_width, box_depth+border+2*security, height+heltec_proto_height/2+security_board-screen_height/2]) cube([screen_width,border, screen_height]);
+            
+            // USB
+            //usb_height=10, usb_width=12, usb_right=4, usb_border=5
+            #translate([box_length+2*security+border-usb_right, box_depth+border+security-usb_border-usb_width/2, height+heltec_proto_height/2+security_board-usb_height/2]) {
+                cube([border+usb_right, usb_width,usb_height]);
+            }
+            
         }
+        translate([box_length-cap_length-cap_right-2, border, box_height-height]){
+           difference() {
+               cube([12,cap_depth+height,height]);
+               translate([7,cap_depth/2,height]) rotate([180,0,0]) screw_footprint();
+           }
+       }
+       translate([box_length-10-cap_right, border, box_height-height]) {
+           difference() {
+               cube([12,cap_depth+height,height]);
+               translate([5,cap_depth/2,height]) rotate([180,0,0]) screw_footprint();
+           }
+       }
     }
 }
 
 
-module grille(width=20, height=30, hole_width=3, hole_height=4, depth=2, border=1) {
+module grille_heltec(width=20, height=30, hole_width=3, hole_height=4, depth=2, border=1) {
     for (i=[0:hole_width+border:width]) {
         for (j=[0:hole_height+border:height]) {
             translate([i,0,j]) cube([hole_width,depth,hole_height]);
@@ -473,7 +522,76 @@ module grille(width=20, height=30, hole_width=3, hole_height=4, depth=2, border=
 }
 
 
+module trappe_heltec(width=20, length=heltec_proto_width,height=2, hole_width=3, hole_height=4, depth=2, border=1) {
+    for (i=[0:hole_width+border:width]) {
+        for (j=[0:hole_height+border:height]) {
+            translate([i,0,j]) cube([hole_width,depth,hole_height]);
+        }
+    }
+}
+
+// ########## SCREEN BOX #####################
+
+
+module fix_ecran(width=15, height=9, hole=3.4, border=5, depth=2) {
+    difference() {
+        union() {
+            cylinder(d=width+2*border, h=depth);
+            translate([-width/2, -height/2, depth]) cube([width, height, depth]);
+        }
+        cylinder(d=hole, h=2*depth, $fn=32);
+    }
+}
+
+module fix_door(width=20, hole=3.4, border=2, height=5) {
+    difference() {
+        union() {
+            //screw(width=10, hole=hole, height=height);
+            translate([-5,-5,0]) cube([10, 10, height]);
+            translate([0,0,height])cylinder(d=width, h=border);
+        }
+        translate([0,0,border]) screw_footprint(hole=3.4, diameter=6.5, screw_height=3.2, height=5); 
+        #cylinder(d=hole, h=border, $fn=32);
+    }
+}
+
 // ############################
+
+
+
+module fix_fan_out(hole=3.4, diam=36, int_diam=21, size=40, depth=12, screw=32, border=5, thickness=2, angle=19, angle_border=5) {
+    difference() {
+        translate([-(size+2*border)/2, -(size+2*border)/2, 0]) cube([size+2*border, size+2*border, thickness]);
+        translate([-screw/2, -screw/2, 0]) cylinder(d=hole, h=thickness, $fn=32);
+        translate([screw/2, -screw/2, 0]) cylinder(d=hole, h=thickness, $fn=32);
+        translate([screw/2, screw/2, 0]) cylinder(d=hole, h=thickness, $fn=32);
+        translate([-screw/2, screw/2, 0]) cylinder(d=hole, h=thickness, $fn=32);
+        for (i=[0:angle_border+angle:360]) rotate([0,0,i]) segment(diam=diam, height=thickness,angle=angle, int=int_diam);
+        translate([-size/2, -size/2,0]) rotate([0,0,90]) round_border(diam=10, height=thickness);
+        translate([size/2, size/2,0]) rotate([0,0,270]) round_border(diam=10, height=thickness);
+        translate([size/2, -size/2,0]) rotate([0,0,180]) round_border(diam=10, height=thickness);
+        translate([-size/2, size/2,0]) rotate([0,0,0]) round_border(diam=10, height=thickness);
+    }
+    
+}
+
+
+module fix_fan_in(hole=3.4, diam=36, int_diam=21, size=40, depth=12, screw=32, border=5, thickness=2, security=0.3) {
+    difference() {
+        translate([-(size+2*border)/2, -(size+2*border)/2, 0]) cube([size+2*border, size+2*border, border+depth-length_border]);
+        translate([-(size+2*security)/2, -(size+2*security)/2, 0]) cube([size+2*security, size+2*security, depth-length_border]);
+        translate([-screw/2, -screw/2, 0]) cylinder(d=hole, h=border+depth-length_border, $fn=32);
+        translate([screw/2, -screw/2, 0]) cylinder(d=hole, h=border+depth-length_border, $fn=32);
+        translate([screw/2, screw/2, 0]) cylinder(d=hole, h=border+depth-length_border, $fn=32);
+        translate([-screw/2, screw/2, 0]) cylinder(d=hole, h=border+depth-length_border, $fn=32);
+        translate([0,0, depth-length_border]) cylinder(d=diam, h=border, $fn=32);
+        #translate([-screw/2, -screw/2, depth-length_border]) screw_footprint(height=border);
+        translate([screw/2, -screw/2, depth-length_border]) screw_footprint(height=border);
+        translate([screw/2, screw/2, depth-length_border]) screw_footprint(height=border);
+        translate([-screw/2, screw/2, depth-length_border]) screw_footprint(height=border);
+    }
+    
+}
 
 box_cjmcu811_back();
 box_cjmcu811_front();
@@ -487,12 +605,17 @@ segment();
 
 union() {
     box_heltec_bottom();
-    !box_heltec_top();
+    box_heltec_top();
 }
-grille();
+grille_heltec();
 
+
+fix_ecran();
+!fix_door();
+fix_fan_out();
+fix_fan_in();
 round_border();
 led();
 light();
 box_iC880A();
-screw();
+screw(width=10);
