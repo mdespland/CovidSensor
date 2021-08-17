@@ -358,6 +358,7 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
         }
         if ((configuration) || (elapsed>1000*3600*4)) {
             if (Config.Debug) console.log("Sending configuration for device  " + refDevice)
+            configuration=false;
             await sendDeviceConfiguration(refDevice);
         }
         if (created) {

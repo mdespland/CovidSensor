@@ -60,9 +60,10 @@ float           CO2Curve[3]  =  {2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE / 
 #define MASK_ALTITUDE     B01000000
 #define MASK_OPTIONS      B10000000
 
-#define MASK_OPTION_BASELINE B00000001
-#define MASK_OPTION_STD_CO2  B00000010
-#define MASK_OPTION_CONFIG   B00000100
+#define MASK_OPTION_BASELINE    B00000001
+#define MASK_OPTION_STD_CO2     B00000010
+#define MASK_OPTION_CONFIG      B00000100
+#define MASK_OPTION_ACK_CONFIG  B00001000
 
 #define MASK_BASELINE     B00000001
 #define MASK_THRESHOLD    B00000010
@@ -74,6 +75,7 @@ const uint8_t appKey[16] = {  0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x
 bool first = true;
 uint16_t threshold = 800;
 uint16_t baseline = 0;
+bool ack_config=false;
 
 bool joinNetwork()
 {
@@ -170,14 +172,26 @@ bool SendLoRaMessage()
     data[size + 1] = (uint8_t)(volts*1000);
     size += 2;
   }
+  int option=0;
   if (first) {
     data[0] |= MASK_OPTIONS;
-    int option = size;
+    option = size;
     size += 1;
     first=false;
     debugSerial.println("Request For Configuration");
     data[option] |= MASK_OPTION_CONFIG;
   }
+  if (ack_config) {
+    if (option==0) {
+      data[0] |= MASK_OPTIONS;
+      option = size;
+      size += 1;
+    }
+    data[option] |= MASK_OPTION_ACK_CONFIG;
+    debugSerial.println("Acknowledge Configuration");
+    ack_config=false;
+  }
+  
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
@@ -205,6 +219,7 @@ void loop() {
       if (length > 0) {
         uint8_t indice = 1;
         if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
+          ack_config=true;
           baseline = response[indice] * 256 + response[indice + 1];
           debugSerial.print("Reconfigure BaseLine :");debugSerial.println(baseline);
           if (baseline != 0) {
@@ -213,6 +228,7 @@ void loop() {
           indice += 2;
         }
         if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+          ack_config=true;
           threshold = response[indice] * 256 + response[indice + 1];
           indice += 2;
         }

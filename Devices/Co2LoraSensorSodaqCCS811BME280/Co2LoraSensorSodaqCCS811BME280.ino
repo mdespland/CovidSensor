@@ -39,7 +39,7 @@
 #define MASK_OPTION_BASELINE    B00000001
 #define MASK_OPTION_STD_CO2     B00000010
 #define MASK_OPTION_CONFIG      B00000100
-#define MASK_OPTION_THRESHOLD   B00001000
+#define MASK_OPTION_ACK_CONFIG  B00001000
 
 #define MASK_BASELINE     B00000001
 #define MASK_THRESHOLD    B00000010
@@ -71,6 +71,7 @@ uint32_t rxdelay2 = 0;
 
 bool first = true;
 bool new_threshold = true;
+bool ack_config=false;
 
 int led = LED_MODE_OFF;
 
@@ -301,6 +302,11 @@ bool SendLoRaMessage()
     debugSerial.println("Request For Configuration");
     data[option] |= MASK_OPTION_CONFIG;
   }
+  if (ack_config) {
+    ack_config=false;
+    debugSerial.println("Acknowledge Configuration");
+    data[option] |= MASK_OPTION_ACK_CONFIG;
+  }
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
@@ -339,6 +345,7 @@ void loop() {
         digitalWrite(LED_RED, LOW);
         uint8_t indice = 1;
         if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
+          ack_config=true;
           baseline = response[indice] * 256 + response[indice + 1];
           debugSerial.print("Receive BaseLine :"); debugSerial.println(baseline);
           if (baseline != 0) {
@@ -351,6 +358,7 @@ void loop() {
           indice += 2;
         }
         if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+          ack_config=true;
           digitalWrite(LED_GREEN, LOW);
           threshold = response[indice] * 256 + response[indice + 1];
           debugSerial.print("Reconfigure Threshold :"); debugSerial.println(threshold);

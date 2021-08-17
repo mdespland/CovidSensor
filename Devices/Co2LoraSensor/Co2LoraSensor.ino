@@ -55,9 +55,10 @@ float         ZERO_POINT_VOLTAGE     =      (1.825 / DC_GAIN); //define the outp
 #define MASK_ALTITUDE     B01000000
 #define MASK_OPTIONS      B10000000
 
-#define MASK_OPTION_BASELINE B00000001
-#define MASK_OPTION_STD_CO2  B00000010
-#define MASK_OPTION_CONFIG   B00000100
+#define MASK_OPTION_BASELINE    B00000001
+#define MASK_OPTION_STD_CO2     B00000010
+#define MASK_OPTION_CONFIG      B00000100
+#define MASK_OPTION_ACK_CONFIG  B00001000
 
 #define MASK_BASELINE     B00000001
 #define MASK_THRESHOLD    B00000010
@@ -144,6 +145,7 @@ LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
 uint32_t count = 0;
 uint16_t percentage;
+bool ack_config=false;
 
 void readSampledData(float * co2, float * volt)
 {
@@ -188,6 +190,7 @@ void __attribute__((weak)) downLinkDataHandle(McpsIndication_t *mcpsIndication)
   if (length > 0) {
     uint8_t indice = 1;
     if (((mcpsIndication->Buffer[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
+      ack_config=true;
       baseline = mcpsIndication->Buffer[indice] * 256 + mcpsIndication->Buffer[indice + 1];
       debugSerial.print("Receive BaseLine :"); debugSerial.println(baseline);
       if (baseline != 0) {
@@ -197,6 +200,7 @@ void __attribute__((weak)) downLinkDataHandle(McpsIndication_t *mcpsIndication)
       indice += 2;
     }
     if (((mcpsIndication->Buffer[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
+      ack_config=true;
       threshold = mcpsIndication->Buffer[indice] * 256 + mcpsIndication->Buffer[indice + 1];
       debugSerial.print("Reconfigure Threshold :"); debugSerial.println(threshold);
       indice += 2;
@@ -245,14 +249,26 @@ static void prepareTxFrame( uint8_t port )
     appData[appDataSize + 1] = (uint8_t)(volts * 1000);
     appDataSize += 2;
   }
+  int option=0;
   if (first) {
     appData[0] |= MASK_OPTIONS;
-    int option = appDataSize;
+    option = appDataSize;
     appDataSize += 1;
     first = false;
     debugSerial.println("Request For Configuration");
     appData[option] |= MASK_OPTION_CONFIG;
   }
+  if (ack_config) {
+    if (option==0) {
+      appData[0] |= MASK_OPTIONS;
+      option = appDataSize;
+      appDataSize += 1;
+    }
+    appData[option] |= MASK_OPTION_ACK_CONFIG;
+    debugSerial.println("Acknowledge Configuration");
+    ack_config=false;
+  }
+
 
 }
 
@@ -266,7 +282,7 @@ void setup()
   if (mcuStarted == 0)
   {
     LoRaWAN.displayMcuInit();
-    Display.flipScreenVertically();
+    
   }
   Serial.begin(115200);
   while (!Serial);
