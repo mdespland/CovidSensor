@@ -31,9 +31,10 @@ const MASK_PRESSURE =       0B00100000
 const MASK_ALTITUDE =       0B01000000
 const MASK_OPTIONS=         0B10000000
 
-const MASK_OPTION_BASELINE= 0B00000001
-const MASK_OPTION_STD_CO2=  0B00000010
-const MASK_OPTION_CONFIG =  0B00000100
+const MASK_OPTION_BASELINE      = 0B00000001
+const MASK_OPTION_STD_CO2       = 0B00000010
+const MASK_OPTION_CONFIG        = 0B00000100
+const MASK_OPTION_ACK_CONFIG    = 0B00001000
 
 const MASK_BASELINE     =   0B00000001
 const MASK_THRESHOLD    =   0B00000010
@@ -328,9 +329,23 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
                         indice += 2;
                     }
                     if ((buff.readUInt8(option) & MASK_OPTION_CONFIG)  === MASK_OPTION_CONFIG ) {
-                        if (Config.Debug) console.log("Device " + refDevice +" have request is configuration")
-                        configuration=true;
-                        
+                        if (Config.Debug) console.log("Device " + refDevice +" has request is configuration")
+                        configuration=true;  
+                    }
+                    if ((buff.readUInt8(option) & MASK_OPTION_ACK_CONFIG)  === MASK_OPTION_ACK_CONFIG ) {
+                        if (Config.Debug) console.log("Device " + refDevice +" has acknowledge its configuration")
+                        if (entity.hasOwnProperty("lastupdateAt")) {
+                            update.lastupdateAt={
+                                type: "Property",
+                                value: now
+                            }
+                        } else {
+                            create.lastupdateAt={
+                                type: "Property",
+                                value: now
+                            }
+                            created=true;
+                        }
                     }
                 }
             }
