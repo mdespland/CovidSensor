@@ -521,13 +521,37 @@ module grille_heltec(width=20, height=30, hole_width=3, hole_height=4, depth=2, 
     }
 }
 
-
-module trappe_heltec(width=20, length=heltec_proto_width,height=2, hole_width=3, hole_height=4, depth=2, border=1) {
-    for (i=[0:hole_width+border:width]) {
-        for (j=[0:hole_height+border:height]) {
-            translate([i,0,j]) cube([hole_width,depth,hole_height]);
+//module light(diameter=10, base=5, base_height=1, thickness=thickness_device, inside=3, border=2) {
+module trappe_heltec(width=20, length=heltec_proto_width,border=2, hole=3.4, security=0.2, led_diameter=10, led_base=2, led_height=5,led_distance=2) {
+    difference() {
+        union() {
+            cube([length-2*security, width-2*security, border]);
+            translate([(length-2*security)/2-(led_diameter/2+led_base+led_distance), width/2-security,border]) cylinder(d=led_diameter+2*led_base, h=led_height, $fn=64);
+            translate([(length-2*security)/2+(led_diameter/2+led_base+led_distance), width/2-security,border]) cylinder(d=led_diameter+2*led_base, h=led_height, $fn=64);
         }
-    }
+        translate([5-security, width/2-security,0]) cylinder(d=hole, h=border, $fn=32);
+        translate([length-2*security-5, width/2-security,0]) cylinder(d=hole, h=border, $fn=32);
+        translate([(length-2*security)/2-(led_diameter/2+led_base+led_distance), width/2-security,0]) cylinder(d=led_diameter+2*security, h=led_height+border, $fn=64);
+            translate([(length-2*security)/2+(led_diameter/2+led_base+led_distance), width/2-security,0]) cylinder(d=led_diameter+2*security, h=led_height+border, $fn=64);
+        }
+}
+
+/*
+box_heltec_top(border=2, inter_board=10, left_co2=5,height=5, heltec_fix=4, security=0.2, angle=10,picot_height=10, border_grille=5, security_board=1, screen_height=14, screen_width=25, screen_right=22, usb_height=10, usb_width=8, usb_right=4, usb_border=5) {
+*/   
+
+module socle_heltec(border=2, inter_board=10, left_co2=5,security=0.2) {
+    box_length=co2_length+heltec_proto_width+inter_board+2*border+left_co2+2*border+2*security;
+    box_depth=2*border+co2_width+2*border+2*security;
+    
+    difference() {
+        cube([box_length+2*border, box_depth+2*border, 2*border]);
+        translate([border, border, border]) cube([box_length, box_depth, border]);
+        translate([2*border, 2*border, 0]) cube([box_length-2*border, box_depth-2*border, border]);
+   }
+   translate([(box_length+2*border-2*10)/3, 2*border, 0]) cube([10, box_depth-2*border, border]);
+   translate([2*(box_length+2*border-2*10)/3+10, 2*border, 0]) cube([10, box_depth-2*border, border]);
+
 }
 
 // ########## SCREEN BOX #####################
@@ -555,6 +579,13 @@ module fix_door(width=20, hole=3.4, border=2, height=5) {
     }
 }
 
+
+module foot(diam=5, height=3, border=2) {
+    difference() {
+        cylinder(d=diam+2*border, h=height+border);
+        translate([0,0,border]) cylinder(d=diam, h=height);
+    }
+}
 // ############################
 
 
@@ -608,14 +639,17 @@ union() {
     box_heltec_top();
 }
 grille_heltec();
-
+trappe_heltec();
+socle_heltec();
+!foot();
 
 fix_ecran();
-!fix_door();
+fix_door();
 fix_fan_out();
 fix_fan_in();
 round_border();
 led();
 light();
+light(base=2,thickness=5);
 box_iC880A();
 screw(width=10);
