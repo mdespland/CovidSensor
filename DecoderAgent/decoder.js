@@ -219,14 +219,16 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
     var lastSeen=0;
     try {
         var entity = await getAirQualityObserved(id);
+        if (entity.hasOwnProperty("lastupdateAt")) { 
+            try {
+                lastSeen=Date.parse(entity.lastupdateAt.value);
+            } catch(error) {
+                if (Config.Debug) console.log("\tCan't read lasSeen : "+error)
+            }
+        }
         if (buff.length === 4) {
             if (entity.hasOwnProperty("co2")) {
                 update.co2=formatAttribute(buff.readUInt8(0) * 256 + buff.readUInt8(1),"59", now)
-                try {
-                    lastSeen=Date.parse(entity.co2.observedAt);
-                } catch(error) {
-                    if (Config.Debug) console.log("\tCan't read lasSeen : "+error)
-                }
             } else {
                 create.co2=formatAttribute(buff.readUInt8(0) * 256 + buff.readUInt8(1),"59", now)
                 created=true;
@@ -352,7 +354,9 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
         }
         var elapsed=0;
         try {
+            if (Config.Debug) console.log("Last seen : " + lastseen)
             elapsed=Date.parse(now)-lastSeen;
+            if (Config.Debug) console.log("Elapsed : " + elapsed)
         } catch(error) {
 
         }
