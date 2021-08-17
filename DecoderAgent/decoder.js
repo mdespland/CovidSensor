@@ -73,7 +73,7 @@ async function sendDeviceConfiguration(refDevice) {
             buff.writeUInt8(Math.floor(response.data.co2.value/256),3)
             buff.writeUInt8(response.data.co2.value % 256,4)
                 var payload={
-                    "confirmed": false, 
+                    "confirmed": true, 
                     "fPort": 5,
                     "data": buff.toString("base64")
                 }
@@ -354,11 +354,11 @@ async function updateAirQualityObserved(id, data, now, refDevice) {
         }
         var elapsed=0;
         try {
-            if (Config.Debug) console.log("Last seen : " + lastseen)
+            if (Config.Debug) console.log("Last seen : " + lastSeen)
             elapsed=Date.parse(now)-lastSeen;
             if (Config.Debug) console.log("Elapsed : " + elapsed)
         } catch(error) {
-
+            console.log("Failed to calculate elapsed "+ error)
         }
         if ((configuration) || (elapsed>1000*3600*4)) {
             if (Config.Debug) console.log("Sending configuration for device  " + refDevice + " elapsed = "+elapsed)
