@@ -18,6 +18,7 @@
 #include <OrangeForRN2483.h>
 #include "Arduino.h"
 #include "Sample.h"
+/*#include <EEPROM.h>*/
 
 /************************Hardware Related Macros************************************/
 #define       INPUT_VOLT                    (6.6)
@@ -68,6 +69,13 @@ float           CO2Curve[3]  =  {2.602, ZERO_POINT_VOLTAGE, (REACTION_VOLTGAE / 
 #define MASK_BASELINE     B00000001
 #define MASK_THRESHOLD    B00000010
 
+#define EEPROM_THRESHOLD 0
+#define EEPROM_BASELINE  1
+
+#define FORCE_RECONFIGURE_DELAY (1000*3600*6)
+
+#define STARTUP_WARMUP_DELAY (1000*60*20)
+
 // The following keys are for structure purpose only. You must define YOUR OWN.
 const uint8_t appEUI[8] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x02, 0xB1, 0x8A };
 const uint8_t appKey[16] = {  0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x66, 0x01 };
@@ -76,6 +84,7 @@ bool first = true;
 uint16_t threshold = 800;
 uint16_t baseline = 0;
 bool ack_config=false;
+unsigned long lastconfig = 0;
 
 bool joinNetwork()
 {
@@ -83,6 +92,48 @@ bool joinNetwork()
   return OrangeForRN2483.joinNetwork(appEUI, appKey);
 }
 
+
+/* ########################################################################## */
+/* #######################      CONFIG           ############################ */
+
+void setThreshold(uint16_t value) {
+  threshold=value;
+  /*EEPROM.write((EEPROM_THRESHOLD*2), (uint8_t)(value >> 8));
+  uint8_t tmp=(uint8_t)(value);
+  if (tmp==255) tmp--;
+  EEPROM.write((EEPROM_THRESHOLD*2)+1, tmp); */
+}
+
+
+void setVoltage(uint16_t value) {
+  ZERO_POINT_VOLTAGE=(((float) value)/1000)/DC_GAIN;
+  CO2Curve[1]=ZERO_POINT_VOLTAGE;
+  /*EEPROM.write((EEPROM_BASELINE*2), (uint8_t)(value >> 8));
+  uint8_t tmp=(uint8_t)(value);
+  if (tmp==255) tmp--;
+  EEPROM.write((EEPROM_BASELINE*2)+1, tmp); */
+}
+
+void getThreshold() {
+  /*uint16_t value1=EEPROM.read(EEPROM_THRESHOLD*2);
+  uint16_t value2=EEPROM.read(EEPROM_THRESHOLD*2+1);
+  if ((value1!=255) && (value2!=255)) {
+    threshold=value1*256+value2;
+  }*/
+}
+
+
+void getVoltage() {
+  /*uint16_t value1=EEPROM.read(EEPROM_BASELINE*2);
+  uint16_t value2=EEPROM.read(EEPROM_BASELINE*2+1);
+  if ((value1!=255) && (value2!=255)) {
+    ZERO_POINT_VOLTAGE=(((float) (value1*256+value2))/1000)/DC_GAIN;
+    CO2Curve[1]=ZERO_POINT_VOLTAGE;
+  }*/
+}
+
+/* ########################################################################## */
+/* #######################      SETUP            ############################ */
 void setup() {
   debugSerial.begin(57600);
 
@@ -90,8 +141,15 @@ void setup() {
   OrangeForRN2483.init();
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
+  getVoltage();
+  getThreshold();
+  lastconfig = millis();
+
+  /* Initialize baseline and threshold */
 }
 
+
+/* ########################################################################## */
 int  MGGetPercentage(float volts, float *pcurve)
 {
   return pow(10, ((volts / DC_GAIN) - pcurve[1]) / pcurve[2] + pcurve[0]);
@@ -134,19 +192,19 @@ void readSampledData(float * co2, float * volt)
 
 bool SendLoRaMessage()
 {
-  float eco2;
-  float volts;
+  float eco2=-1;
+  float volts=-1;
   uint8_t size = 5;
   uint8_t port = 5;
   uint8_t data[size];
 
-
-  readSampledData(&eco2, &volts);
-  debugSerial.print("ECO2 : ");
-  debugSerial.print(eco2);
-  debugSerial.print(" Volts : ");
-  debugSerial.println(volts);
-
+  if (!first) {
+    readSampledData(&eco2, &volts);
+    debugSerial.print("ECO2 : ");
+    debugSerial.print(eco2);
+    debugSerial.print(" Volts : ");
+    debugSerial.println(volts);
+  }
   data[0] = 0;
   size = 1;
   if (eco2 != -1) {
@@ -177,14 +235,14 @@ bool SendLoRaMessage()
     data[0] |= MASK_OPTIONS;
     option = size;
     size += 1;
-    first=false;
     debugSerial.println("Request For Configuration");
-    data[option] |= MASK_OPTION_CONFIG;
+    data[option] = MASK_OPTION_CONFIG;
   }
   if (ack_config) {
     if (option==0) {
       data[0] |= MASK_OPTIONS;
       option = size;
+      data[option]=0;
       size += 1;
     }
     data[option] |= MASK_OPTION_ACK_CONFIG;
@@ -195,9 +253,30 @@ bool SendLoRaMessage()
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
+bool SendAckLoRaMessage() {
+  uint8_t size = 1;
+  uint8_t port = 5;
+  uint8_t data[size];
+  data[0]=0;
+  return OrangeForRN2483.sendMessage(UNCONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
+}
+
+
+/* ########################################################################## */
+/* #######################       LOOP            ############################ */
+
 void loop() {
+
   unsigned long start = millis();
-  bool res = OrangeForRN2483.getJoinState();
+  bool res=false;
+  if ((start-lastconfig) > FORCE_RECONFIGURE_DELAY) {
+    OrangeForRN2483.init();
+    debugSerial.println("Force reconfigure");
+    res = joinNetwork();
+    lastconfig=millis();
+  }
+  
+  res = OrangeForRN2483.getJoinState();
   if (! res) {
     debugSerial.println("Join Request");
     res = joinNetwork();
@@ -210,6 +289,7 @@ void loop() {
     bool sent = SendLoRaMessage();
     if (sent) {
       debugSerial.println("Message sent");
+      delay(2000);
       //we can try to receive the response
       DownlinkMessage* downlinkMessage = OrangeForRN2483.getDownlinkMessage();
       debugSerial.print("Port :"); debugSerial.println(downlinkMessage->getPort());
@@ -217,32 +297,46 @@ void loop() {
       uint8_t* response = (uint8_t*)downlinkMessage->getMessageByteArray(&length);
       debugSerial.print("Response length :"); debugSerial.println(length);
       if (length > 0) {
+        lastconfig=millis();
         uint8_t indice = 1;
         if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
           ack_config=true;
           baseline = response[indice] * 256 + response[indice + 1];
           debugSerial.print("Reconfigure BaseLine :");debugSerial.println(baseline);
           if (baseline != 0) {
-            ZERO_POINT_VOLTAGE=(baseline/1000)/DC_GAIN;
+            setVoltage(baseline);
+            debugSerial.print("ZERO_POINT_VOLTAGE=");debugSerial.println(ZERO_POINT_VOLTAGE);
           }
           indice += 2;
         }
         if (((response[0] & MASK_THRESHOLD) == MASK_THRESHOLD) && (length >= indice + 2)) {
           ack_config=true;
-          threshold = response[indice] * 256 + response[indice + 1];
+          setThreshold(response[indice] * 256 + response[indice + 1]);
           indice += 2;
         }
+      SendAckLoRaMessage();
       }
     } else  {
       debugSerial.println("Failed to send message");
     }
 
-
-    unsigned long spent = (millis() - start);
-    if (spent < WAIT_BETWEEN_MESSAGE) {
-      debugSerial.print("We will wait : ");
-      debugSerial.println(WAIT_BETWEEN_MESSAGE - spent);
-      delay(WAIT_BETWEEN_MESSAGE - spent);
+    if (first) {
+      if (!ack_config) {
+        debugSerial.println("Wait 5s and check configuration");
+        delay(5000);
+      } else {
+        first=false;
+        debugSerial.println("We will wait 20 minutes for warmup");
+        delay(STARTUP_WARMUP_DELAY);
+        debugSerial.println("Warmup finished !!!");
+      }
+    } else {
+      unsigned long spent = (millis() - start);
+      if (spent < WAIT_BETWEEN_MESSAGE) {
+        debugSerial.print("We will wait : ");
+        debugSerial.println(WAIT_BETWEEN_MESSAGE - spent);
+        delay(WAIT_BETWEEN_MESSAGE - spent);
+      }
     }
   } else {
     debugSerial.println("Join Failed");

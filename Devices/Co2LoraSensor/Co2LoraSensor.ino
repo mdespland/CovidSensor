@@ -63,9 +63,14 @@ float         ZERO_POINT_VOLTAGE     =      (1.825 / DC_GAIN); //define the outp
 #define MASK_BASELINE     B00000001
 #define MASK_THRESHOLD    B00000010
 
+#define FORCE_RECONFIGURE_DELAY (1000*3600*6)
+#define STARTUP_WARMUP_DELAY (1000*60*20)
+
 bool first = true;
 bool new_threshold = true;
 int led = LED_MODE_OFF;
+bool ack_config=false;
+unsigned long lastconfig = 0;
 
 uint16_t threshold = 800;
 uint16_t baseline = 0;
@@ -195,7 +200,8 @@ void __attribute__((weak)) downLinkDataHandle(McpsIndication_t *mcpsIndication)
       debugSerial.print("Receive BaseLine :"); debugSerial.println(baseline);
       if (baseline != 0) {
         debugSerial.print("Reconfigure BaseLine :"); debugSerial.println(baseline);
-        ZERO_POINT_VOLTAGE = (baseline / 1000) / DC_GAIN;
+        ZERO_POINT_VOLTAGE = (((float) baseline) / 1000) / DC_GAIN;
+        CO2Curve[1]=ZERO_POINT_VOLTAGE;
       }
       indice += 2;
     }
@@ -211,15 +217,17 @@ void __attribute__((weak)) downLinkDataHandle(McpsIndication_t *mcpsIndication)
 static void prepareTxFrame( uint8_t port )
 {
 
-  float eco2;
-  float volts;
+  float eco2=-1;
+  float volts=-1;
 
-  readSampledData(&eco2, &volts);
-  debugSerial.print("ECO2 : ");
-  debugSerial.print(eco2);
-  debugSerial.print(" Volts : ");
-  debugSerial.println(volts);
-  percentage = (uint16_t) (eco2);
+  if (millis()<STARTUP_WARMUP_DELAY ) {
+    readSampledData(&eco2, &volts);
+    debugSerial.print("ECO2 : ");
+    debugSerial.print(eco2);
+    debugSerial.print(" Volts : ");
+    debugSerial.println(volts);
+    percentage = (uint16_t) (eco2);
+  }
   appData[0] = 0;
   appDataSize = 1;
   if (eco2 != -1) {
@@ -256,12 +264,13 @@ static void prepareTxFrame( uint8_t port )
     appDataSize += 1;
     first = false;
     debugSerial.println("Request For Configuration");
-    appData[option] |= MASK_OPTION_CONFIG;
+    appData[option] = MASK_OPTION_CONFIG;
   }
   if (ack_config) {
     if (option==0) {
       appData[0] |= MASK_OPTIONS;
       option = appDataSize;
+      appData[option]=0;
       appDataSize += 1;
     }
     appData[option] |= MASK_OPTION_ACK_CONFIG;
@@ -294,6 +303,7 @@ void setup()
   pinMode(LED_RED, OUTPUT);
   digitalWrite(LED_GREEN, HIGH);
   digitalWrite(LED_RED, HIGH);
+  lastconfig = millis();
 }
 
 // The loop function is called in an endless loop

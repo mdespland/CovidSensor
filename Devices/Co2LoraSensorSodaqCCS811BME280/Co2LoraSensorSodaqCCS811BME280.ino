@@ -46,6 +46,10 @@
 
 #define MAX_MESSAGE_SIZE (1+2*7+1+2*2)
 
+#define FORCE_RECONFIGURE_DELAY (1000*3600*6)
+
+#define STARTUP_WARMUP_DELAY (1000*60*20)
+
 uint8_t provide = MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE;
 
 #define         READ_SAMPLE_INTERVAL         50    //define how many samples you are going to take in normal operation
@@ -77,6 +81,7 @@ int led = LED_MODE_OFF;
 
 uint16_t threshold = 800;
 uint16_t baseline = 0;
+unsigned long lastconfig = 0;
 
 bool joinNetwork()
 {
@@ -116,6 +121,7 @@ void setup() {
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
+  lastconfig = millis();
 }
 
 void adjustEnvironmentalData(float * humidity, float * temperature, float * pressure, float * altitude)
@@ -147,13 +153,13 @@ void adjustEnvironmentalData(float * humidity, float * temperature, float * pres
       delay(READ_SAMPLE_INTERVAL);
     }
     float median = humidities->value(MAX_SAMPLE_DISTANCE);
-    *humidity = median == NULL_SAMPLE_VALUE ? *humidity : median;
+    *humidity = (median == NULL_SAMPLE_VALUE) ? *humidity : median;
     median = temperatures->value(MAX_SAMPLE_DISTANCE);
-    *temperature = median == NULL_SAMPLE_VALUE ? *temperature : median;
+    *temperature = (median == NULL_SAMPLE_VALUE) ? *temperature : median;
     median = pressures->value(MAX_SAMPLE_DISTANCE);
-    *pressure = median == NULL_SAMPLE_VALUE ? *pressure : median;
+    *pressure = (median == NULL_SAMPLE_VALUE) ? *pressure : median;
     median = altitudes->value(5);
-    *altitude = median == NULL_SAMPLE_VALUE ? *altitude : median;
+    *altitude = (median == NULL_SAMPLE_VALUE) ? *altitude : median;
     debugSerial.println("Reading Environmental Sample iteration");
     retry++;
   }
@@ -190,7 +196,7 @@ void readSampledData(float * eco2, float * tvoc, float * humidity, float * tempe
     for (i = 0; i < READ_SAMPLE_TIMES; i++) {
       while (!ccs811.dataAvailable()) {
         debugSerial.print(".");
-        delay(100);
+        delay(1000);
       }
       debugSerial.println(".");
       ccs811.readAlgorithmResults();
@@ -214,31 +220,34 @@ void readSampledData(float * eco2, float * tvoc, float * humidity, float * tempe
 
 bool SendLoRaMessage()
 {
-  float eco2;
-  float tvoc;
+  float eco2=NULL_SAMPLE_VALUE;
+  float tvoc=NULL_SAMPLE_VALUE;
   uint8_t size = MAX_MESSAGE_SIZE;
   uint8_t port = 5;
   uint8_t data[size];
-  float humidity;
-  float temperature;
-  float pressure;
-  float altitude;
+  float humidity=NULL_SAMPLE_VALUE;
+  float temperature=NULL_SAMPLE_VALUE;
+  float pressure=NULL_SAMPLE_VALUE;
+  float altitude=NULL_SAMPLE_VALUE;
 
-  readSampledData(&eco2, &tvoc, &humidity, &temperature, &pressure, &altitude);
-  debugSerial.print(" Humidity: ");
-  debugSerial.print(humidity, 0);
-  debugSerial.print(" Pressure: ");
-  debugSerial.print(pressure, 0);
-  debugSerial.print(" Altimeter: ");
-  debugSerial.print(altitude, 0);
-  debugSerial.print(" Temp: ");
-  debugSerial.print(temperature, 2);
+  if (!first ) {
+    readSampledData(&eco2, &tvoc, &humidity, &temperature, &pressure, &altitude);
+    debugSerial.print(" Humidity: ");
+    debugSerial.print(humidity, 0);
+    debugSerial.print(" Pressure: ");
+    debugSerial.print(pressure, 0);
+    debugSerial.print(" Altimeter: ");
+    debugSerial.print(altitude, 0);
+    debugSerial.print(" Temp: ");
+    debugSerial.print(temperature, 2);
+  
+    debugSerial.println();
+    debugSerial.print("ECO2 : ");
+    debugSerial.print(eco2);
+    debugSerial.print("TVOC : ");
+    debugSerial.println(tvoc);
+  }
 
-  debugSerial.println();
-  debugSerial.print("ECO2 : ");
-  debugSerial.print(eco2);
-  debugSerial.print("TVOC : ");
-  debugSerial.println(tvoc);
   data[0] = 0;
   size = 1; //MASK_CO2 | MASK_TVOC | MASK_TEMPERATURE | MASK_HUMIDITY | MASK_PRESSURE | MASK_ALTITUDE
   if (eco2 != NULL_SAMPLE_VALUE) {
@@ -290,15 +299,16 @@ bool SendLoRaMessage()
   data[0] |= MASK_OPTIONS;
   int option = size;
   size += 1;
-  data[option] = MASK_OPTION_BASELINE;
-  uint16_t baseline = ccs811.getBaseline();
-  debugSerial.print("Baseline : ");
-  debugSerial.println(baseline);
-  data[size] = (uint8_t)(baseline >> 8);
-  data[size + 1] = (uint8_t)(baseline);
-  size += 2;
-  if (first) {
-    first = false;
+  data[option] = 0;
+  if (!first) {
+    data[option] |= MASK_OPTION_BASELINE;
+    uint16_t baseline = ccs811.getBaseline();
+    debugSerial.print("Baseline : ");
+    debugSerial.println(baseline);
+    data[size] = (uint8_t)(baseline >> 8);
+    data[size + 1] = (uint8_t)(baseline);
+    size += 2;
+  } else {
     debugSerial.println("Request For Configuration");
     data[option] |= MASK_OPTION_CONFIG;
   }
@@ -310,12 +320,27 @@ bool SendLoRaMessage()
   return OrangeForRN2483.sendMessage(CONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
 }
 
+bool SendAckLoRaMessage() {
+  uint8_t size = 1;
+  uint8_t port = 5;
+  uint8_t data[size];
+  data[0]=0;
+  return OrangeForRN2483.sendMessage(UNCONFIRMED_MESSAGE, data, size, port); // send unconfirmed message
+}
+
 void loop() {
   digitalWrite(LED_GREEN, HIGH);
   digitalWrite(LED_RED, HIGH);
   digitalWrite(LED_BLUE, LOW);
   unsigned long start = millis();
-  bool res = OrangeForRN2483.getJoinState();
+  bool res=false;
+  if ((start-lastconfig) > FORCE_RECONFIGURE_DELAY) {
+    OrangeForRN2483.init();
+    debugSerial.println("Force reconfigure");
+    res = joinNetwork();
+    lastconfig=millis();
+  }
+  res = OrangeForRN2483.getJoinState();
   if (! res) {
     debugSerial.println("######## JOIN REQUEST ########");
     res = joinNetwork();
@@ -342,6 +367,7 @@ void loop() {
       uint8_t* response = (uint8_t*)downlinkMessage->getMessageByteArray(&length);
       debugSerial.print("Response length :"); debugSerial.println(length);
       if (length > 0) {
+        lastconfig=millis();
         digitalWrite(LED_RED, LOW);
         uint8_t indice = 1;
         if (((response[0] & MASK_BASELINE) == MASK_BASELINE) && (length >= indice + 2)) {
@@ -375,6 +401,7 @@ void loop() {
           debugSerial.println("Led have blink");
           indice += 2;
         }
+        SendAckLoRaMessage();
       }
       /* #####################################*/
     } else  {
@@ -397,12 +424,25 @@ void loop() {
       }
     }
     digitalWrite(LED_BLUE, HIGH);
-    unsigned long spent = (millis() - start);
-    debugSerial.println("######## END OF LOOP ########");
-    if (spent < WAIT_BETWEEN_MESSAGE) {
-      debugSerial.print("We will wait : ");
-      debugSerial.println(WAIT_BETWEEN_MESSAGE - spent);
-      delay(WAIT_BETWEEN_MESSAGE - spent);
+
+    if (first) {
+      if (!ack_config) {
+        debugSerial.println("Wait 5s and check configuration");
+        delay(5000);
+      } else {
+        first=false;
+        debugSerial.println("We will wait 20 minutes for warmup");
+        delay(STARTUP_WARMUP_DELAY);
+        debugSerial.println("Warmup finished !!!");
+      }
+    } else {
+      unsigned long spent = (millis() - start);
+      debugSerial.println("######## END OF LOOP ########");
+      if (spent < WAIT_BETWEEN_MESSAGE) {
+        debugSerial.print("We will wait : ");
+        debugSerial.println(WAIT_BETWEEN_MESSAGE - spent);
+        delay(WAIT_BETWEEN_MESSAGE - spent);
+      }
     }
   } else {
     debugSerial.println("Join Failed");
