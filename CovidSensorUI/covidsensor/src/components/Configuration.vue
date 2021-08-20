@@ -128,6 +128,7 @@ export default {
           for (var i = 0; i < response.data.length; i++) {
             var elt = {
               id: response.data[i].id,
+              lastupdateAt: response.data[i].lastupdateAt.value,
               name: "",
               device: "",
               co2: 0,

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="devicesListCell">{{ device.id }}</div>
+    <div class="devicesListCell">{{ device.id }} {{ device.lastupdateAt }}</div>
     <div class="devicesListCell">
       <span v-if="!isEdited">{{ device.name }}</span>
       <input v-if="isEdited" v-model="me.name" />
