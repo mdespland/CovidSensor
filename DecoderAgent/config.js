@@ -1,5 +1,5 @@
 'use strict'
-
+const fs = require('fs');
 function decodeDevices() {
     var list = {
         "urn:ngsi-ld:AirQualityObserved:Co2:sensor1": "urn:ngsi-ld:Device:chirpstack:2232330000888802"

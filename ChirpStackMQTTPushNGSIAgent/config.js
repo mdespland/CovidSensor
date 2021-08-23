@@ -18,7 +18,7 @@
 //
 
 'use strict'
-
+const fs = require('fs');
 function readSecret(key, value) {
     var result = "";
     if (process.env.hasOwnProperty(key + "_FILE")) {
