@@ -3,10 +3,13 @@ services:
   chirpstackagent:
     image: marcdespland/chirpstack-ngsiagent:1.0.0
     environment:
-      - ORION_API_URL=http://proxyld:8080
+      - "ORION_API_URL=http://proxyld:8080"
+      - "AGENT_TOKEN_FILE=/run/secrets/agent.token"
     depends_on:
       - proxyld
     restart: always
+    secrets:
+      - agent.token
     logging:
       options:
         max-size: "15m"
@@ -15,10 +18,13 @@ services:
     image: marcdespland/decoder-ngsiagent:1.1.0
     environment:
       - "ORION_API_URL=http://proxyld:8080"
+      - "AGENT_TOKEN_FILE=/run/secrets/agent.token"
       - "MQTT_URL=mqtt://mosquitto:1883"
       - "DEVICE_LIST={\"urn:ngsi-ld:AirQualityObserved:Co2:sensor1\": \"urn:ngsi-ld:Device:chirpstack:0004a30b001f3423\", \"urn:ngsi-ld:AirQualityObserved:Co2:sensor2\": \"urn:ngsi-ld:Device:chirpstack:0004a30b001f3740\", \"urn:ngsi-ld:AirQualityObserved:Co2:sensor3\": \"urn:ngsi-ld:Device:chirpstack:0004a30b001bbf28\", \"urn:ngsi-ld:AirQualityObserved:Co2:sensor4\": \"urn:ngsi-ld:Device:chirpstack:2232330000888802\"}"
     depends_on:
       - proxyld
+    secrets:
+      - agent.token
     restart: always
     logging:
       options:
@@ -28,10 +34,13 @@ services:
     image: marcdespland/chirpstack-ngsiagent-down:1.0.0
     environment:
       - "ORION_API_URL=http://proxyld:8080"
+      - "AGENT_TOKEN_FILE=/run/secrets/agent.token"
       - "MQTT_URL=mqtt://mosquitto:1883"
     depends_on:
       - proxyld
     restart: always
+    secrets:
+      - agent.token
     logging:
       options:
         max-size: "15m"

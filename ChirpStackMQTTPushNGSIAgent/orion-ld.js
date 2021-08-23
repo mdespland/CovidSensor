@@ -118,7 +118,8 @@ async function sendNGSILDRequest(verb, path, body = "", contentType = "applicati
         method: verb,
         url: orion + "/ngsi-ld/v1" + path,
         headers: {
-            "Accept": accept
+            "Accept": accept,
+            "X-Auth-Token": Config.AgentToken
         },
         json: true
     };
@@ -148,6 +149,7 @@ async function sendRequest(request, expected) {
     var response;
 //    if (Config.OrionService != "") request.headers["Fiware-Service"] = Config.OrionService;
 //    if (Config.OrionServicePath != "") request.headers["Fiware-ServicePath"] = Config.OrionServicePath;
+    request.headers["X-Auth-Token"]=Config.AgentToken
     try {
         response = await axios.request(request);
     } catch (error) {

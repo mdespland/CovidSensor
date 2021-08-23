@@ -67,6 +67,16 @@ services:
     image: proxyld:latest
     container_name: proxyld
     hostname: proxyld
+    environment: 
+      - OAUTH2_BEARER_FILE=/run/secrets/oauth2.bearer
+      - CONFIG_PASSWORD_FILE=/run/secrets/config.password
+      - AGENT_TOKEN_FILE=/run/secrets/agent.token
+      - DEFAULT_TOKEN_FILE=/run/secrets/default.token
+    secrets:
+      - oauth2.bearer
+      - config.password
+      - agent.token
+      - default.token
     ports:
       - 8082:8080
       - 80:8080
@@ -79,3 +89,12 @@ services:
       options:
         max-size: "15m"
         max-file: "2"
+secrets:
+  oauth2.bearer:
+    file: ./secrets/oauth2.bearer
+  config.password:
+    file: ./secrets/config.password
+  agent.token:
+    file: ./secrets/agent.token
+  default.token:
+    file: ./secrets/default.token

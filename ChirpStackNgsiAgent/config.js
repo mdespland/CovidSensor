@@ -19,8 +19,28 @@
 
 'use strict'
 
+function readSecret(key, value) {
+    var result = "";
+    if (process.env.hasOwnProperty(key + "_FILE")) {
+        try {
+            result = fs.readFileSync(process.env[key + "_FILE"], "utf8");
+        } catch (error) {
+            console.log("Can't read secret file for " + key + " : " + process.env[key + "_FILE"]);
+            result = value;
+        }
+    } else {
+        if (process.env.hasOwnProperty(key)) {
+            result = process.env[key];
+        } else {
+            result = value;
+        }
+    }
+    return result;
+}
+
 module.exports = {
     OrionAPI: process.env.ORION_API_URL || "http://proxyld:8080",
     AgentListenPort: 8080,
-    AgentListenIP: "0.0.0.0"
+    AgentListenIP: "0.0.0.0",
+    AgentToken: readSecret("AGENT_TOKEN", "agent_changeit")
 }

@@ -118,7 +118,8 @@ async function sendNGSILDRequest(verb, path, body = "", contentType = "applicati
         method: verb,
         url: orion + "/ngsi-ld/v1" + path,
         headers: {
-            "Accept": accept
+            "Accept": accept,
+            "X-Auth-Token": Config.AgentToken
         },
         json: true
     };
@@ -166,7 +167,8 @@ async function createEntity(entity, content = "application/ld+json", expected = 
         method: 'POST',
         url: orion + "/ngsi-ld/v1/entities" + (options === "" ? "" : "?options=" + options),
         headers: {
-            "Content-Type": content
+            "Content-Type": content,
+            "X-Auth-Token": Config.AgentToken
         },
         data: JSON.stringify(entity),
         json: true

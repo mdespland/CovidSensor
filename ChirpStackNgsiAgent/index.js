@@ -66,7 +66,7 @@ app.all('/chirpstack', async function (req, res, next) {
 });
 
 app.all('*', function (req, res, next) {
-  response = {
+  var response = {
       method: req.method,
       hostname: req.hostname,
       url: req.url,

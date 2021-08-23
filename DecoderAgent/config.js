@@ -8,12 +8,32 @@ function decodeDevices() {
         try {
             list = JSON.parse(process.env.DEVICE_LIST)
         } catch (error) {
-            console.log("Can't parse List : "+ error)
+            console.log("Can't parse List : " + error)
             console.log(process.env.DEVICE_LIST)
         }
     }
-    console.log(JSON.stringify(list,null,4))
+    console.log(JSON.stringify(list, null, 4))
     return list;
+}
+
+
+function readSecret(key, value) {
+    var result = "";
+    if (process.env.hasOwnProperty(key + "_FILE")) {
+        try {
+            result = fs.readFileSync(process.env[key + "_FILE"], "utf8");
+        } catch (error) {
+            console.log("Can't read secret file for " + key + " : " + process.env[key + "_FILE"]);
+            result = value;
+        }
+    } else {
+        if (process.env.hasOwnProperty(key)) {
+            result = process.env[key];
+        } else {
+            result = value;
+        }
+    }
+    return result;
 }
 
 module.exports = {
@@ -22,12 +42,13 @@ module.exports = {
     OrionServicePath: process.env.ORION_SERVICE_PATH || "",
     AgentListenPort: process.env.AGENT_LISTEN_PORT || 8080,
     AgentListenIP: process.env.AGENT_LISTEN_IP || "0.0.0.0",
-    ShowData: process.env.AGENT_SHOW_DATA ? (process.env.AGENT_SHOW_DATA=="true") : false,
-    Debug: process.env.AGENT_DEBUG ? (process.env.AGENT_DEBUG=="true") : false,
+    ShowData: process.env.AGENT_SHOW_DATA ? (process.env.AGENT_SHOW_DATA == "true") : false,
+    Debug: process.env.AGENT_DEBUG ? (process.env.AGENT_DEBUG == "true") : false,
     Devices: decodeDevices(),
     MainSubscriptionId: "urn:ngsi-ld:Subscription:CovidSensor:AirQualityObserved",
     SubscriptionHost: process.env.SUBSCRIPTION_HOST || "decoderagent",
     MqttURL: process.env.MQTT_URL || "mqtt://mosquitto:1883",
     ApplicationId: 2,
-    BaseDeviceUrn: "urn:ngsi-ld:Device:chirpstack:"
+    BaseDeviceUrn: "urn:ngsi-ld:Device:chirpstack:",
+    AgentToken: readSecret("AGENT_TOKEN", "agent_changeit")
 }

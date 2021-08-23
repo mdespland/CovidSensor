@@ -389,7 +389,8 @@ async function sendRequest(verb, path, body = "", contentType = "application/jso
         method: verb,
         url: orion + "/ngsi-ld/v1" + path,
         headers: {
-            "Accept": accept
+            "Accept": accept, 
+            "X-Auth-Token": Config.AgentToken
         },
         json: true
     };
