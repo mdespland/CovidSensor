@@ -270,7 +270,7 @@ void loop() {
   unsigned long start = millis();
   bool res=false;
   if ((start-lastconfig) > FORCE_RECONFIGURE_DELAY) {
-    OrangeForRN2483.init();
+    /*OrangeForRN2483.init();*/
     debugSerial.println("Force reconfigure");
     res = joinNetwork();
     lastconfig=millis();

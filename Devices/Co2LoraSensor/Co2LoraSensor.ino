@@ -150,7 +150,6 @@ LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
 uint32_t count = 0;
 uint16_t percentage;
-bool ack_config=false;
 
 void readSampledData(float * co2, float * volt)
 {
@@ -219,14 +218,16 @@ static void prepareTxFrame( uint8_t port )
 
   float eco2=-1;
   float volts=-1;
-
-  if (millis()<STARTUP_WARMUP_DELAY ) {
+  debugSerial.print(millis());debugSerial.print(" < ");debugSerial.println(STARTUP_WARMUP_DELAY);
+  if (millis()>STARTUP_WARMUP_DELAY ) {
     readSampledData(&eco2, &volts);
     debugSerial.print("ECO2 : ");
     debugSerial.print(eco2);
     debugSerial.print(" Volts : ");
     debugSerial.println(volts);
     percentage = (uint16_t) (eco2);
+  } else {
+    debugSerial.println("######  WARMUP !!! ######");
   }
   appData[0] = 0;
   appDataSize = 1;

@@ -580,11 +580,21 @@ module fix_door(width=20, hole=3.4, border=2, height=5) {
 }
 
 
-module foot(diam=5, height=3, border=2) {
+module foot(diam=5.5, height=3, border=2) {
     difference() {
-        cylinder(d=diam+2*border, h=height+border);
-        translate([0,0,border]) cylinder(d=diam, h=height);
+        cylinder(d=diam+2*border, h=height+border, $fn=64);
+        translate([0,0,border]) cylinder(d=diam, h=height, $fn=64);
     }
+}
+
+module foot_screen(length=70, width=20, height=15, border=5, angle=10) {
+    difference() {
+        cube([length+border, width, border+length*sin(angle)+height]);
+        translate([border,0,border+length*sin(angle)]) cube([length, width,height]);
+        translate([-length*sin(angle)*sin(angle),0,0]) rotate([0,angle,0]) cube([sqrt(length*length+(length*sin(angle))*(length*sin(angle))), width, length*sin(angle)]);
+        #translate([length+border+length*sin(angle)*sin(angle),0,length]) rotate([0,90+angle,0]) cube([sqrt(length*length+(length*sin(angle))*(length*sin(angle))), width, length*sin(angle)]);
+    }
+    
 }
 // ############################
 
@@ -641,7 +651,8 @@ union() {
 grille_heltec();
 trappe_heltec();
 socle_heltec();
-!foot();
+foot();
+!foot_screen();
 
 fix_ecran();
 fix_door();
