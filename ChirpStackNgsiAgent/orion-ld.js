@@ -149,6 +149,7 @@ async function sendRequest(request, expected) {
     var response;
 //    if (Config.OrionService != "") request.headers["Fiware-Service"] = Config.OrionService;
 //    if (Config.OrionServicePath != "") request.headers["Fiware-ServicePath"] = Config.OrionServicePath;
+    request.headers["X-Auth-Token"]=Config.AgentToken
     try {
         response = await axios.request(request);
     } catch (error) {
@@ -167,8 +168,7 @@ async function createEntity(entity, content = "application/ld+json", expected = 
         method: 'POST',
         url: orion + "/ngsi-ld/v1/entities" + (options === "" ? "" : "?options=" + options),
         headers: {
-            "Content-Type": content,
-            "X-Auth-Token": Config.AgentToken
+            "Content-Type": content
         },
         data: JSON.stringify(entity),
         json: true
