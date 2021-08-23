@@ -1,5 +1,6 @@
 <template>
   <div>
+    <Password v-show="config_token==''" @authenticate="authenticate" @cancel="cancelPassword" />
     <div id="devicesList">
       <div id="devicesListHeader">
         <div class="devicesListRow">
@@ -11,7 +12,7 @@
         </div>
       </div>
       <div id="devicesListBody">
-        <DeviceConfiguration class="devicesListRow" v-for="device in list" :key="device.id" :device="device" :edit="edit" :editid="editid" @ok="actionOk" @edit="actionEdit" @cancel="actionCancel"/>
+        <DeviceConfiguration class="devicesListRow" v-for="device in list" :token="config_token" :key="device.id" :device="device" :edit="edit" :editid="editid" @ok="actionOk" @edit="actionEdit" @cancel="actionCancel"/>
       </div>
     </div>
   </div>
@@ -62,25 +63,30 @@
 <script>
 import axios from "axios";
 import DeviceConfiguration from './DeviceConfiguration.vue'
+import Password from './Password.vue'
 const ORION_API_URL = process.env.VUE_APP_ORION_API_URL;
+const DEFAULT_TOKEN= process.env.VUE_APP_DEFAULT_TOKEN
 const ORIONLD = axios.create({
   baseURL: ORION_API_URL + `/ngsi-ld/v1/`,
   headers: {
     Accept: "application/ld+json",
     Link: '<https://smartdatamodels.org/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"',
+    'X-Auth-Token': DEFAULT_TOKEN
   },
 });
 
 export default {
   components: {
-    DeviceConfiguration
+    DeviceConfiguration,
+    Password
   },
   props: {},
   data() {
     return {
       list: [],
       edit: false,
-      editid: ""
+      editid: "",
+      config_token:""
     };
   },
   mounted: function () {},
@@ -88,6 +94,12 @@ export default {
     this.list = await this.loadAirQualityObserved();
   },
   methods: {
+    authenticate(token) {
+      this.config_token=token;
+    },
+    cancelPassword() {
+      this.$emit("cancel");
+    },
     async actionOk() {
       console.log("Action OK ")
       this.edit=false;

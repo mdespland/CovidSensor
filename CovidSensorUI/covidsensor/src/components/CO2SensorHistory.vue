@@ -14,11 +14,13 @@
 import axios from "axios";
 import LineChart from "./Chart.vue";
 const ORION_API_URL = process.env.VUE_APP_ORION_API_URL;
+const DEFAULT_TOKEN= process.env.VUE_APP_DEFAULT_TOKEN
 const ORIONLD = axios.create({
   baseURL: ORION_API_URL + `/ngsi-ld/v1/`,
   headers: {
     Accept: "application/ld+json",
     Link: '<https://smartdatamodels.org/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"',
+    'X-Auth-Token': DEFAULT_TOKEN
   },
 });
 

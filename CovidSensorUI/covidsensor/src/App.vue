@@ -2,7 +2,7 @@
   <div id="main">
     <GraphSelector :attribute="attribute" @choose="chooseAttribute" id="menu"/>
     <CO2SensorHistory v-if="!isConfig" :attribute="attribute" id="graph"/>
-    <Configuration v-if="isConfig" id="configuration"/>
+    <Configuration v-if="isConfig" id="configuration" @cancel="cancelConfiguration"/>
   </div>
 </template>
 
@@ -36,6 +36,9 @@ export default {
     };
   },
   methods: {
+    cancelConfiguration() {
+      this.chooseAttribute("co2")
+    },
     chooseAttribute(attribute) {
       console.log("Attribute switch to "+attribute)
       this.attribute=attribute

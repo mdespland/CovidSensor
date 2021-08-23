@@ -46,7 +46,7 @@ const ORIONLD = axios.create({
   baseURL: ORION_API_URL + `/ngsi-ld/v1/`,
   headers: {
     "Content-Type": "application/ld+json",
-  },
+  }
 });
 
 export default {
@@ -54,6 +54,7 @@ export default {
     device: Object,
     edit: Boolean,
     editid: String,
+    token: String,
   },
   data() {
     return {
@@ -82,7 +83,7 @@ export default {
             "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
           ],
         };
-        await ORIONLD.patch("entities/" + this.device.id + "/attrs", body);
+        await ORIONLD.patch("entities/" + this.device.id + "/attrs", body, {headers: {"X-Auth-Token": this.token}});
       } catch (error) {
         console.log(error);
       }
@@ -104,7 +105,7 @@ export default {
         console.log("Body Device : " + JSON.stringify(bodyDevice, null, 4))
         var response=await ORIONLD.patch(
           "entities/" + this.device.device + "/attrs",
-          bodyDevice
+          bodyDevice , {headers: {"X-Auth-Token": this.token}}
         );
         console.log("Response device update : " + response.status);
       } catch (error) {
@@ -131,11 +132,11 @@ export default {
 
       return device;
     },
-    async loadAirQualityObserved() {
+    /*async loadAirQualityObserved() {
       var list = [];
       try {
         var response = await ORIONLD.get(
-          "entities/?type=AirQualityObserved&idPattern=urn:ngsi-ld:AirQualityObserved:Co2:*"
+          "entities/?type=AirQualityObserved&idPattern=urn:ngsi-ld:AirQualityObserved:Co2:*", {headers: {"X-Auth-Token": this.token}}
         );
         if (Array.isArray(response.data)) {
           for (var i = 0; i < response.data.length; i++) {
@@ -175,7 +176,7 @@ export default {
         console.log(error);
       }
       return list;
-    },
+    },*/
   },
 };
 </script>
