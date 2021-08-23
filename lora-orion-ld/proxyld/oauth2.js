@@ -42,6 +42,7 @@ async function token(login, password, bearer, scope = "") {
 }
 
 async function authorize(token, method, url, query) {
+    console.log("Request : "+token+" "+ method+" "+url)
     if (token === config_token) {
         return true;
     } else if (token === Config.DefaultToken) {
