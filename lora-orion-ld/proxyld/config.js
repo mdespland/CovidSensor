@@ -38,7 +38,7 @@ function readSecret(key, value) {
     var result = "";
     if (process.env.hasOwnProperty(key + "_FILE")) {
         try {
-            result = fs.readFileSync(process.env[key + "_FILE"], "utf8");
+            result = fs.readFileSync(process.env[key + "_FILE"], "utf8").trim();
         } catch (error) {
             console.log("Can't read secret file for "+key+ " : "+ process.env[key + "_FILE"]);
             result= value;

@@ -23,7 +23,7 @@ function readSecret(key, value) {
     var result = "";
     if (process.env.hasOwnProperty(key + "_FILE")) {
         try {
-            result = fs.readFileSync(process.env[key + "_FILE"], "utf8");
+            result = fs.readFileSync(process.env[key + "_FILE"], "utf8").trim();
         } catch (error) {
             console.log("Can't read secret file for " + key + " : " + process.env[key + "_FILE"]);
             result = value;
@@ -42,5 +42,5 @@ module.exports = {
     OrionAPI: process.env.ORION_API_URL || "http://proxyld:8080",
     AgentListenPort: 8080,
     AgentListenIP: "0.0.0.0",
-    AgentToken: readSecret("AGENT_TOKEN", "agent_changeit")
+    AgentToken: readSecret("AGENT_TOKEN", "agent_changeit_chirpstack")
 }

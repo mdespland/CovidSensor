@@ -21,7 +21,7 @@ function readSecret(key, value) {
     var result = "";
     if (process.env.hasOwnProperty(key + "_FILE")) {
         try {
-            result = fs.readFileSync(process.env[key + "_FILE"], "utf8");
+            result = fs.readFileSync(process.env[key + "_FILE"], "utf8").trim();
         } catch (error) {
             console.log("Can't read secret file for " + key + " : " + process.env[key + "_FILE"]);
             result = value;
@@ -50,5 +50,5 @@ module.exports = {
     MqttURL: process.env.MQTT_URL || "mqtt://mosquitto:1883",
     ApplicationId: 2,
     BaseDeviceUrn: "urn:ngsi-ld:Device:chirpstack:",
-    AgentToken: readSecret("AGENT_TOKEN", "agent_changeit")
+    AgentToken: readSecret("AGENT_TOKEN", "agent_changeit_decoder")
 }
