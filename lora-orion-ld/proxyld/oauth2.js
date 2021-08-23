@@ -7,7 +7,7 @@ module.exports = {
     authorize
 }
 
-var config_token=makeid(32);
+var config_token = makeid(32);
 
 function makeid(length) {
     var result = '';
@@ -19,15 +19,15 @@ function makeid(length) {
     return result;
 }
 
-async function token(login, password, bearer, scope="") {
-    if (("Bearer "+Config.OAuth2Bearer)!==bearer) {
+async function token(login, password, bearer, scope = "") {
+    if (("Bearer " + Config.OAuth2Bearer) !== bearer) {
         if (Config.Debug) console.log("Invalid Bearer : request rejected")
         return Promise.reject("Invalid Bearer");
     }
-    switch(login) {
-        case "configuration" : 
+    switch (login) {
+        case "configuration":
             if (password === Config.ConfigPassword) {
-                config_token=makeid(32)
+                config_token = makeid(32)
                 return config_token;
             } else {
                 if (Config.Debug) console.log("Invalid Password for user configuration : request rejected")
@@ -42,22 +42,18 @@ async function token(login, password, bearer, scope="") {
 }
 
 async function authorize(token, method, url, query) {
-    switch(token) {
-        case config_token:
+    if (token === config_token) {
+        return true;
+    } else if (token === Config.DefaultToken) {
+        if (method === "GET") {
             return true;
-            break;
-        case Config.DefaultToken:
-            if (method==="GET") {
-                return true;
-            } else {
-                return false;
-            }
-            break;
-        case Config.AgentToken:
-            return true;
-            break;
-        default:
+        } else {
             return false;
+        }
+    } else if (token === Config.AgentToken) {
+        return true;
+    } else {
+        return false;
     }
     console.log("WRONG")
 }
