@@ -9,9 +9,13 @@ const express = require('express');
 var cors = require('cors');
 const querystring = require('querystring')
 
+const corsOptions = {
+  exposedHeaders: 'content-range',
+};
+
 //const config = require('../../ChirpStackMQTTPushNGSIAgent/config');
 const app = express();
-app.use(cors())
+app.use(cors(corsOptions))
 
 app.use(function (req, res, next) {
   var data = [];
